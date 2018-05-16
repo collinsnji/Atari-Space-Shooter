@@ -1,28 +1,45 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>FHS Chat</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <ul class="pages">
-    <li class="chat page">
-      <div class="chatArea">
-        <ul class="messages"></ul>
-      </div>
-      <input class="inputMessage" placeholder="Type here..."/>
-    </li>
-    <li class="login page">
-      <div class="form">
-        <h3 class="title">Enter Your Name To Join</h3>
-        <input class="usernameInput" type="text" maxlength="14" />
-      </div>
-    </li>
-  </ul>
 
-  <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/main.js"></script>
+<head>
+	<meta charset="UTF-8">
+	<title>FHS Chat</title>
+	<link rel="stylesheet" href="style.css">
+
+	<!-- LOAD LIBRARIES-->
+	<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+
+	<script src="/libs/p5.min.js"></script>
+	<script src="/libs/p5.dom.min.js"></script>
+	<script src="/libs/p5.sound.min.js"></script>
+	<script src="/libs/p5.collide2d.min.js"></script>
+</head>
+
+<body>
+	<section>
+		<div>
+			<ul class="pages">
+				<li class="chat page">
+					<div class="chatArea">
+						<ul class="messages"></ul>
+					</div>
+					<input class="inputMessage" placeholder="Type here..." />
+				</li>
+				<li class="login page">
+					<div class="form">
+						<h3 class="title">Enter Your Name to Join</h3>
+						<input class="usernameInput" type="text" maxlength="14" />
+					</div>
+				</li>
+			</ul>
+		</div>
+		<div id="gameCanvas"></div>
+	</section>
+
+	<!-- <script src="/game/enemy.ships.js"></script> -->
+	<script src="/src/space.shooter.js"></script>
+	<script src="/p2p.messaging.js"></script>
 </body>
+
 </html>
