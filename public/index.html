@@ -8,12 +8,9 @@
 
 	<!-- LOAD LIBRARIES-->
 	<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<script src="/src/libs/p5.min.js"></script>
+	<script src="/src/libs/p5.play.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
-
-	<script src="/libs/p5.min.js"></script>
-	<script src="/libs/p5.dom.min.js"></script>
-	<script src="/libs/p5.sound.min.js"></script>
-	<script src="/libs/p5.collide2d.min.js"></script>
 </head>
 
 <body>
@@ -29,17 +26,21 @@
 				<li class="login page">
 					<div class="form">
 						<h3 class="title">Enter Your Name to Join</h3>
-						<input class="usernameInput" type="text" maxlength="14" />
+						<input id="username" class="usernameInput" type="text" maxlength="14" />
 					</div>
 				</li>
 			</ul>
 		</div>
 		<div id="gameCanvas"></div>
 	</section>
-
-	<!-- <script src="/game/enemy.ships.js"></script> -->
-	<script src="/src/space.shooter.js"></script>
+	<script>
+		document.onload = () => {
+			let username = document.getElementById('username').nodeValue;
+			console.log(username);
+		};
+	</script>
 	<script src="/p2p.messaging.js"></script>
+	<script src="/src/atari.game.js"></script>
 </body>
 
 </html>
