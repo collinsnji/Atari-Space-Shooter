@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>FHS Chat</title>
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="/style/style.css">
 
 	<!-- LOAD LIBRARIES-->
 	<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
@@ -14,30 +14,34 @@
 </head>
 
 <body>
-	<section>
-		<div>
-			<ul class="pages">
-				<li class="chat page">
+	<section class="login-ui" id="loginPage">
+		<div class="login-background">
+			<div class="login-content">
+				<h3 class="login-message">Enter your name to join Atari World</h3>
+				<input id="username" class="usernameInput" type="text" maxlength="16" autofocus="true">
+			</div>
+		</div>
+	</section>
+	<section class="atari">
+		<div class="chat">
+			<!-- obsolete-->
+			<div class="pages">
+				<span class="page">
 					<div class="chatArea">
 						<ul class="messages"></ul>
 					</div>
 					<input class="inputMessage" placeholder="Type here..." />
-				</li>
-				<li class="login page">
-					<div class="form">
-						<h3 class="title">Enter Your Name to Join</h3>
-						<input id="username" class="usernameInput" type="text" maxlength="14" />
-					</div>
-				</li>
-			</ul>
+				</span>
+			</div>
 		</div>
-		<div id="gameCanvas"></div>
+		<!-- end obsolete-->
+		</div>
+		<div class="gameRender">
+			<div class="game-renderer" id="gameCanvas">
+				<!-- Game Canvas will be inserted here -->
+			</div>
+		</div>
 	</section>
-	<script>
-		document.onload = () => {
-			let username = document.getElementById('username').nodeValue;
-			console.log(username);
-		};
 	</script>
 	<script src="/p2p.messaging.js"></script>
 	<script src="/src/atari.game.js"></script>
