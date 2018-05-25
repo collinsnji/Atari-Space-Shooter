@@ -1,16 +1,33 @@
 {
-  "name": "socket.io-chat",
+  "name": "atati-space-asteroid",
   "version": "0.0.0",
-  "description": "A simple chat client using socket.io",
+  "description": "A simple Atari Space Shooter game (with a twist) ",
   "main": "index.js",
-  "author": "Grant Timmerman",
+  "author": "Collin Grimm <hey@collingrimm.me>",
   "private": true,
-  "license": "BSD",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo 'No Test'",
+    "compile-css": "compass watch --output-style compressed"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/collinsnji/Atari-Space-Shooter.git"
+  },
+  "keywords": [
+    "Collin",
+    "Grimm",
+    "portfolio",
+    "code",
+    "template"
+  ],
+  "bugs": {
+    "url": "https://github.com/collinsnji/Atari-Space-Shooter/issues"
+  },
+  "homepage": "https://github.com/collinsnji/Atari-Space-Shooter#readme",
   "dependencies": {
     "express": "4.13.4",
     "socket.io": "^2.0.4"
-  },
-  "scripts": {
-    "start": "node index.js"
   }
 }
