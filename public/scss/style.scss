@@ -1,0 +1,107 @@
+/**
+ * @license
+ * Author: Collin Grimm
+ * Email: hey@collingrimm.me
+ * Copyright (C) 2018 - Present Collin Grimm
+ * 
+ * This source code is subject to the terms of the MIT License.
+ * If a copy of the MIT License was not distributed with this file, You can
+ * obtain one at https://collingrimm.me/LICENSE.txt
+ */
+
+ @import 'partials';
+ ::-webkit-scrollbar-track { background-color: rgba(0, 0, 0, .10); }
+ ::-webkit-scrollbar-thumb { background-color: $acent-color; }
+ ::-webkit-scrollbar-button { display: none; }
+ 
+ *::before, *::after {
+   -webkit-box-sizing: border-box;
+   box-sizing: border-box;
+ }
+ 
+ html,
+ body {
+   background: $primary-background-dark;
+   overflow: hidden;
+   @include space(0px, 0px);
+   @include text(16px, $fonts, $primary-text);
+ }
+.login-ui {
+    .login-background {
+        background: linear-gradient(45deg, #f44336, #e91e63, #9c27b0, #673ab7, #3f51b5, #009688, #8bc34a, #ff9800, #ff5722, #009688) no-repeat;
+        background-size: 500% 500%;
+        -webkit-animation: backgroundColour 20s ease infinite;
+        animation: backgroundColour 20s ease infinite;
+        display: block;
+        position: fixed;
+        @include size(100vw, 100vh);
+        z-index: 1;
+        .login-content {
+            color: $primary-text-light;
+            @include flexbox(flex, column, center, center);
+            @include size(100vw, 100vh);
+            .login-message {
+                font-family: 'Roboto';
+                font-weight: 300;
+                font-size: 2rem;
+            }
+            .usernameInput {
+                background: $primary-background-light;
+                border-radius: 2px;
+                border: 0px;
+                outline: none;
+                box-shadow: $box-shadow;
+                @include text(1.3333rem, 'Roboto', $primary-text);
+                @include size(400px, null);
+                @include space(1rem, null);
+            }
+        }
+    }
+    &.logged-in {
+        display: none;
+    }
+}
+.atari {
+    @include flexbox(flex, row-reverse, null, null);
+    @include size(100vw, 100vh);
+    .chat {
+        flex-grow: 1;
+        .pages{
+            .page {
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+                justify-content: space-around;
+                overflow: scroll;
+                .chatArea {
+                    .messages{
+                        color: $primary-text-light;
+                    }
+                }
+                .inputMessage {
+                    position: fixed;
+                    bottom: 0px;
+                }
+            }
+        }
+    }
+}
+
+// Login Background Animation
+@-webkit-keyframes backgroundColour {
+	0% { background-position: 0% 50% }
+	50% { background-position: 100% 50% }
+	100% { background-position: 0% 50% }
+}
+
+@-moz-keyframes backgroundColour {
+	0% { background-position: 0% 50% }
+	50% { background-position: 100% 50% }
+	100% { background-position: 0% 50% }
+}
+
+@keyframes backgroundColour {
+	0% { background-position: 0% 50% }
+	50% { background-position: 100% 50% }
+	100% { background-position: 0% 50% }
+}
