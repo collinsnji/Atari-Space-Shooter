@@ -17,11 +17,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 var numUsers = 0;
 
-io.on('connection', function (socket) {
+io.on('connection', socket => {
     var addedUser = false;
 
     // when the client emits 'new message', this listens and executes
-    socket.on('new message', function (data) {
+    socket.on('new message', data => {
         // we tell the client to execute 'new message'
         socket.broadcast.emit('new message', {
             username: socket.username,
@@ -73,4 +73,7 @@ io.on('connection', function (socket) {
             });
         }
     });
+    socket.on('current score', (score) => {
+        console.log(`score: ${score}`);
+    })
 });

@@ -1,5 +1,6 @@
 'use strict';
 
+let socket = io();
 const config = {
     MARGIN: 40,
     MAX_ENEMY: 8,
@@ -10,14 +11,14 @@ const config = {
     BACK_GROUND: null,
 }
 
-let Player = {
+const Player = {
     ship: null,
     bullets: null,
     bulletImg: '../assets/bullet.png',
     sprite: '../assets/player.png'
 }
 
-let Enemy = {
+const Enemy = {
     ships: null,
     bullet: null,
     sprite: '../assets/enemy.png',
@@ -26,8 +27,12 @@ let Enemy = {
 
 function setup() {
     // set Canvas size
-    createCanvas(600, 800);
+    let canvas = createCanvas(windowWidth/2, windowHeight);
+    canvas.parent('gameCanvas');
     background(0);
+
+    // hide rhe cursor
+    noCursor();
 
     //create player sprites
     Player.ship = createSprite(10, 10);
@@ -61,7 +66,7 @@ function draw() {
     background(0);
 
     // set player position and size
-    Player.ship.position.x = mouseX;
+    Player.ship.position.x = constrain(mouseX, 0, windowWidth/2);
     Player.ship.position.y = mouseY;
     Player.ship.scale = 0.3;
 
@@ -136,6 +141,9 @@ function CheckHit(other, bullet) {
 
     if (other.scale <= 0.3) {
         config.SCORE += 10;
+        
+        // send score to server
+        socket.emit('current score', config.SCORE);
         console.log(config.SCORE);
     }
     bullet.remove();
