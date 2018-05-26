@@ -1,4 +1,4 @@
-$(document).ready( function () {
+$(document).ready(function () {
     let FADE_TIME = 150; // ms
     let TYPING_TIMER_LENGTH = 400; // ms
     let COLORS = [
@@ -24,11 +24,6 @@ $(document).ready( function () {
     let $currentInput = $usernameInput.focus();
 
     let socket = io();
-
-    function displayScore() {
-        let username = cleanInput($usernameInput.val().trim());
-        $score.text(`${username}: ${currentScore}`);
-    }
 
     function addParticipantsMessage(data) {
         let message = '';
@@ -89,7 +84,7 @@ $(document).ready( function () {
         }
 
         let $usernameDiv = $('<span class="username"/>')
-            .text(data.username)
+            .text(data.username[0].toUpperCase())
             .css('color', getUsernameColor(data.username));
         let $messageBodyDiv = $('<span class="messageBody">')
             .text(data.message);
@@ -98,6 +93,7 @@ $(document).ready( function () {
         let $messageDiv = $('<li class="message"/>')
             .data('username', data.username)
             .addClass(typingClass)
+            .css('display', 'flex')
             .append($usernameDiv, $messageBodyDiv);
 
         addMessageElement($messageDiv, options);
@@ -226,7 +222,7 @@ $(document).ready( function () {
     socket.on('login', function (data) {
         connected = true;
         // Display the welcome message
-        let message = "FHS Chat v1.0 ";
+        let message = "Atari World Chat";
         log(message, {
             prepend: true
         });
@@ -276,25 +272,31 @@ $(document).ready( function () {
         log('attempt to reconnect has failed');
     });
 
-    // auto scroll
-    const messages = $messages;
-    console.log(messages);
-    function getMessages() {
-        // Prior to getting your messages.
-        shouldScroll = messages.scrollTop + messages.clientHeight === messages.scrollHeight;
+    // auto scroll using observers
+    var targetNode = document.getElementById('message-list');
 
-        // After getting your messages.
-        if (!shouldScroll) {
-            scrollToBottom();
+    // Options for the observer (which mutations to observe)
+    var conf = { attributes: true, childList: true };
+
+    // Callback function to execute when mutations are observed
+    var callback = function (mutationsList) {
+        for (var mutation of mutationsList) {
+            if (mutation.type == 'childList') {
+                    targetNode.scrollTop = targetNode.scrollHeight;
+                console.log('A child node has been added or removed.');
+            }
+            else if (mutation.type == 'attributes') {
+                console.log('The ' + mutation.attributeName + ' attribute was modified.');
+            }
         }
-    }
+    };
 
-    function scrollToBottom() {
-        messages.scrollTop = messages.scrollHeight;
-    }
+    // Create an observer instance linked to the callback function
+    var observer = new MutationObserver(callback);
 
-    scrollToBottom();
+    // Start observing the target node for configured mutations
+    observer.observe(targetNode, conf);
 
-    setInterval(getMessages, 100);
-
+    // Later, you can stop observing
+    // observer.disconnect();
 });
