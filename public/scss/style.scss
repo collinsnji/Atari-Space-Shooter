@@ -74,13 +74,43 @@
                 justify-content: space-around;
                 overflow: scroll;
                 .chatArea {
+                    margin-bottom: 3rem;
                     .messages{
                         color: $primary-text-light;
+                        overflow-y: scroll;
+                        display: block;
+                        list-style: none;
+                        height: 90vh;
+                        .message {
+                            display: flex;
+                            flex-direction: row-reverse;
+                            .username {
+                                padding: 1rem;
+                                background: #202020;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                border-radius: 50%;
+                                width: 20px;
+                                height: 20px;
+
+                            }
+                            .messageBody{
+                                background: #000;
+                                padding: 1rem;
+                                border-radius: 24px;
+                            }
+                        }
                     }
                 }
                 .inputMessage {
                     position: fixed;
                     bottom: 0px;
+                    width: 100%;
+                    padding: 16px 8px;
+                    border: none;
+                    outline: none;
+                    box-shadow: $message-box-shadow;
                 }
             }
         }

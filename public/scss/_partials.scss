@@ -12,6 +12,7 @@ $acent-color-light: #f3f3f3;
 $primary-background-dark: $primary-text;
 $primary-background-light: $primary-text-light;
 $box-shadow:-2px -2px 2px rgba(0,0,0,.1), 2px 2px 2px rgba(0,0,0,.1);
+$message-box-shadow: -0 -3px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 
 // Mixins
 @mixin flexbox($display, $direction, $just-cont, $align-items:null, $grow:null) {
