@@ -1,6 +1,6 @@
 'use strict';
 
-let socket = io();
+let Socket = io();
 const config = {
     MARGIN: 40,
     MAX_ENEMY: 8,
@@ -143,7 +143,7 @@ function CheckHit(other, bullet) {
         config.SCORE += 10;
         
         // send score to server
-        socket.emit('current score', config.SCORE);
+        Socket.emit('current score', config.SCORE);
         console.log(config.SCORE);
     }
     bullet.remove();
