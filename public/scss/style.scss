@@ -21,7 +21,7 @@
  
  html,
  body {
-   background: $primary-background-dark;
+   // background: $primary-background-dark;
    overflow: hidden;
    @include space(0px, 0px);
    @include text(16px, $fonts, $primary-text);
@@ -68,44 +68,31 @@
         flex-grow: 1;
         .pages{
             .page {
-                display: flex;
-                flex-direction: column;
-                height: 100vh;
-                justify-content: space-around;
-                overflow: scroll;
+                overflow: hidden;
+                @include flexbox(flex, column, space-around, null);
+                @include size(null, 100vh);
                 .chatArea {
-                    margin-bottom: 3rem;
                     .messages{
                         color: $primary-text-light;
                         overflow-y: scroll;
                         display: block;
                         list-style: none;
-                        height: 90vh;
-                        .message {
-                            display: flex;
-                            flex-direction: row-reverse;
-                            .username {
-                                padding: 1rem;
-                                background: #202020;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                border-radius: 50%;
-                                width: 20px;
-                                height: 20px;
-
+                        @include size(null, 90vh);
+                        .messageContainer{
+                            background: $chat-background-dark;
+                            border-radius: 4px;
+                            @include space(0.3rem 0.8rem 0.8rem, 0.2rem 0.5rem);
+                            @include flexbox(flex, column, null, flex-end);
+                            .message {
+                                @include flexbox(flex, row-reverse, null);
                             }
-                            .messageBody{
-                                background: #000;
-                                padding: 1rem;
-                                border-radius: 24px;
+                            .username {
+                                font-size: small;
                             }
                         }
                     }
                 }
                 .inputMessage {
-                    position: fixed;
-                    bottom: 0px;
                     width: 100%;
                     padding: 16px 8px;
                     border: none;
