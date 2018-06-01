@@ -23,6 +23,7 @@
  body {
    // background: $primary-background-dark;
    overflow: hidden;
+   background-color: #000;
    @include space(0px, 0px);
    @include text(16px, $fonts, $primary-text);
  }

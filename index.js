@@ -76,6 +76,10 @@ io.on('connection', socket => {
         }
     });
     socket.on('current score', (score) => {
+        socket.broadcast.emit('score update', {
+            username: currentUser,
+            score: score
+        });
         console.log(`${currentUser} score: ${score}`);
-    })
+    });
 });
