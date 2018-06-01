@@ -19,6 +19,8 @@ const Elements = {
     // pages
     loginPage: document.querySelector('.login-ui'),
     chatPage: document.querySelector('.chat.page'),
+    // scoreboard
+    scoreboard: document.querySelector('.scoreboard'),
 }
 
 const Client = {
@@ -120,7 +122,7 @@ class AtariChat {
         if (options.currentUser == Client.username) {
             el.style.cssText = 'display: flex; flex-direction: row-reverse';
         }
-        else{
+        else {
             el.children[0].children[0].style.alignSelf = 'flex-start';
         }
         // Elements.messages[0].scrollTop = Elements.messages[0].scrollHeight;
@@ -327,4 +329,29 @@ socket.on('reconnect', () => {
 
 socket.on('reconnect_error', () => {
     console.log('attempt to reconnect has failed');
+});
+
+// when server emits a score update
+socket.on('score update', (currentScore) => {
+    let userId = Client.username.match(/[^_\s\W]+/g).join('-');
+    console.log(Elements.scoreboard.childNodes.length);
+
+    if (Elements.scoreboard.childNodes.length > 0) {
+        let userScore = document.getElementById(`${userId}-score`);
+        userScore.innerHTML = `${currentScore.username}: ${currentScore.score}`
+    }
+    else {
+        let scoreList = Helpers.createElement('ul', {
+            class: 'scoreboardList',
+            style: 'color: #fff;'
+        });
+        let userScore = Helpers.createElement('li', {
+            class: 'score',
+            id: `${userId}-score`,
+            text: `${currentScore.username}: ${currentScore.score}`
+        });
+        console.log(userScore);
+        scoreList.appendChild(userScore);
+        Elements.scoreboard.appendChild(scoreList);
+    }
 });
