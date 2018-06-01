@@ -1,33 +1,71 @@
 'use strict';
 
-let Socket = io();
+/**
+ * Atari World Space Shooter
+ * 
+ * @version 0.0.1
+ * @author Collin Grimm <hello@collingrimm.me>
+ * @copyright (c) 2018 Collin Grimm
+ * @license MIT License https://collingrimm.me/license
+ * 
+ */
+
+
+/* Main Socket to connect game to server */
+const Socket = io();
+
+/* Global Configs */
 const config = {
     MARGIN: 40,
-    MAX_ENEMY: 8,
+    MAX_ENEMY: 10,
     SCORE: 0,
     // scene is twice the size of the canvas
     SCENE_W: 1200,
     SCENE_H: 1600,
+    LEVELS: 10,
     BACK_GROUND: null,
+    PAUSE: false
 }
+
+/** 
+ * The Player Object
+ * Player.ship: The player's ship
+ * PLayer.bullets: A processing group to hold the player bullets
+ * Player.bulletImg: Player bullet sprite
+ * Player.sprite: Player's sprite
+ * Player.explosion: Explosion used when the player dies
+ * 
+ */
 
 const Player = {
     ship: null,
     bullets: null,
     bulletImg: '../assets/bullet.png',
-    sprite: '../assets/player.png'
+    sprite: '../assets/player.png',
+    explosion: ['../assets/fx/explosion0.png', '../assets/fx/explosion1.png'],
+    lives: 3
 }
 
+/** 
+ * The Enemy Object
+ * Enemy.ship: The enemy's ship
+ * Enemy.bullets: A processing group to hold the enemy bullets
+ * Enemy.bulletImg: Enemy bullet sprite
+ * Enemy.sprite: Enemy sprite
+ * Enemy.explosion: Explosion used when the enemy dies
+ */
 const Enemy = {
     ships: null,
-    bullet: null,
+    bullets: null,
     sprite: '../assets/enemy.png',
-    explosion: '../assets/explosion.png'
+    bulletImg: '../assets/bullet.png',
+    explosion: '../assets/explosion.png',
+    created: false
 }
 
 function setup() {
     // set Canvas size
-    let canvas = createCanvas(windowWidth/2, windowHeight);
+    let canvas = createCanvas(windowWidth / 2, windowHeight - 200);
     canvas.parent('gameCanvas');
     background(0);
 
@@ -40,33 +78,43 @@ function setup() {
     config.BACK_GROUND = new Group();
 
     //create some background for visual reference
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < 10; i++) {
         //create a sprite and add the 3 animations
-        let rock = createSprite(random(-width, config.SCENE_W + width), random(-height, config.SCENE_H + height));
+        let planets = createSprite(random(-width, config.SCENE_W + width), random(-height, config.SCENE_H + height));
+        let stars = createSprite(random(-width, config.SCENE_W + width), random(-height, config.SCENE_H + height));
         //cycles through rocks 0 1 2
-        rock.addAnimation('normal', '../assets/space/stars.png');
-        config.BACK_GROUND.add(rock);
+        planets.addAnimation('normal', '../assets/space/far-planets.png');
+        stars.addAnimation('normal', '../assets/space/stars.png');
+        config.BACK_GROUND.add(planets);
+        config.BACK_GROUND.add(stars);
     }
 
     // create groups to hold bullets and enemy ships
     Player.bullets = new Group();
+    Enemy.bullets = new Group();
     Enemy.ships = new Group();
 
-    for (let i = 0; i < config.MAX_ENEMY; i++) {
-        let angle = random(360);
-        let enemyPos = {
-            x: (width / 2) + 1000 * cos(radians(angle)),
-            y: (height / 2) + 1000 * sin(radians(angle))
+    // create enemies two seconds after game starts
+    setTimeout(() => {
+        for (let i = 0; i < config.MAX_ENEMY; i++) {
+            let angle = random(360);
+            let enemyPos = {
+                x: (width / 2) + 1000 * cos(radians(angle)),
+                y: (height / 2) + 1000 * sin(radians(angle))
+            }
+            createEnemy(enemyPos.x, enemyPos.y, 3);
         }
-        createEnemy(enemyPos.x, enemyPos.y, 3);
-    }
+
+        // let the draw method know that enemies have been created
+        Enemy.created == true;
+    }, 3000);
 }
 
 function draw() {
     background(0);
 
     // set player position and size
-    Player.ship.position.x = constrain(mouseX, 0, windowWidth/2);
+    Player.ship.position.x = constrain(mouseX, 0, windowWidth / 2);
     Player.ship.position.y = mouseY;
     Player.ship.scale = 0.3;
 
@@ -74,8 +122,8 @@ function draw() {
     //set the camera position to the player position
     camera.zoom = (mouseIsPressed) ? 0.5 : 1;
 
-    camera.position.x = mouseX;
-    camera.position.y = mouseY;
+    camera.position.x = Player.ship.position.x;
+    camera.position.y = Player.ship.position.y;
     camera.off();
 
     // constrain player to the configured scene size
@@ -101,8 +149,8 @@ function draw() {
     });
 
     // check collision between bullets and enemy ships
-    Enemy.ships.overlap(Player.bullets, CheckHit)
-    Player.ship.collide(Enemy.ships);
+    Enemy.ships.collide(Player.bullets, CheckHit);
+    Player.ship.collide(Enemy.ships, destroyPlayer);
 
     // HACK: fire the bullets if space key is pressed
     // TODO: Use a mousePressed function instead to test if user is shooting
@@ -114,12 +162,20 @@ function draw() {
         Player.bullets.add(bullet);
     }
 
-    if(Enemy.ships.length <= 0){
+    if (Enemy.ships.length <= 0 && Enemy.created == true) {
         console.log("Level Complete");
     }
 
     // draw all sprites on the screen
     drawSprites();
+    if (keyWentDown('p') && config.PAUSE == false) {
+        config.PAUSE == true;
+        noLoop();
+    }
+    if (keyWentDown('p') && config.PAUSE == true) {
+        config.PAUSE == false;
+        loop();
+    }
 }
 
 function CheckHit(other, bullet) {
@@ -141,10 +197,12 @@ function CheckHit(other, bullet) {
 
     if (other.scale <= 0.3) {
         config.SCORE += 10;
-        
+
         // send score to server
         Socket.emit('current score', config.SCORE);
-        console.log(config.SCORE);
+        // if(config.SCORE > config.MAX_ENEMY){
+        //     config.MAX_ENEMY = config.MAX_ENEMY + (config.SCORE % 10)
+        // }
     }
     bullet.remove();
     other.remove();
@@ -168,7 +226,48 @@ function createEnemy(x, y, scaleFactor) {
     }
 
     enemyShipImg.mass = 2 + enemyShip.scale;
-    enemyShip.setCollider("circle", 0, 0, 50);
     Enemy.ships.add(enemyShip);
+
+    setInterval(() => {
+        if (enemyShip.position.y > Player.ship.position.y) {
+            let bullet = createSprite(enemyShip.position.x, enemyShip.position.y);
+            bullet.addImage(loadImage(Enemy.bulletImg));
+            bullet.setSpeed(5 + enemyShip.getSpeed(), enemyShip.rotation + 90);
+            bullet.life = 40;
+            Enemy.bullets.add(bullet);
+        }
+
+    }, 2000);
+
     return enemyShip;
+}
+
+function destroyPlayer(player, enemy) {
+    let lives = Player.lives;
+    let playerExplosion = createSprite(player.position.x + 2, player.position.y + 2);
+    for (let i = 0; i < 3; i++) {
+        playerExplosion.addAnimation('small', Player.explosion[0]);
+        playerExplosion.addAnimation('large', Player.explosion[1]);
+
+        playerExplosion.addImage(loadImage(Player.explosion[0]));
+        playerExplosion.setSpeed(random(3, 5), random(360));
+        playerExplosion.rotation = 1000 * cos(radians(random(360)));
+        playerExplosion.friction = 0.95;
+        playerExplosion.life = 30;
+    }
+    playerExplosion.changeAnimation('large');
+    console.log('lives', lives);
+
+    enemy.remove();
+    Player.lives -= 1;
+    if (Player.lives <= 0) {
+        console.log('Game Over');
+        setTimeout(() => noLoop(), 100);
+        return;
+    };
+    Player.bullets.forEach((bullet) => {
+        bullet.remove();
+    });
+
+    Socket.emit('player hit', Player.lives);
 }
