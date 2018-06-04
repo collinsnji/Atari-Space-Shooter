@@ -66,6 +66,7 @@
     @include flexbox(flex, row-reverse, null, null);
     @include size(100vw, 100vh);
     .chat {
+        background: $chat-background-dark;
         flex-grow: 1;
         .pages{
             .page {
