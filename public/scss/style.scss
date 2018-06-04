@@ -81,7 +81,7 @@
                         list-style: none;
                         @include size(null, 90vh);
                         .messageContainer{
-                            background: $chat-background-dark;
+                            background: #404040;
                             border-radius: 4px;
                             @include space(0.3rem 0.8rem 0.8rem, 0.2rem 0.5rem);
                             @include flexbox(flex, column, null, flex-end);

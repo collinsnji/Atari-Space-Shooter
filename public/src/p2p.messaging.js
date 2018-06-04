@@ -1,184 +1,239 @@
-$(document).ready(function () {
-    let FADE_TIME = 150; // ms
-    let TYPING_TIMER_LENGTH = 400; // ms
-    let COLORS = [
-        '#e21400', '#91580f', '#f8a700', '#f78b00',
-        '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
-        '#3b88eb', '#3824aa', '#a700ff', '#d300e7'
-    ];
+'use strict';
 
-    // Initialize variables
-    let $window = $(window);
-    let $usernameInput = $('.usernameInput'); // Input for username
-    let $messages = $('.messages'); // Messages area
-    let $inputMessage = $('.inputMessage'); // Input message input box
+// configs
+const FADE_TIME = 150; // ms
+const TYPING_TIMER_LENGTH = 400; // ms
+const COLORS = [
+    '#e21400', '#91580f', '#f8a700', '#f78b00',
+    '#58dc00', '#287b00', '#a8f07a', '#4ae8c4',
+    '#3b88eb', '#3824aa', '#a700ff', '#d300e7'
+];
 
-    let $loginPage = $('.login-ui'); // The login page
-    let $chatPage = $('.chat.page'); // The chatroom page
+const socket = io();
+const Window = window;
+const Elements = {
+    usernameInput: document.querySelector('.usernameInput'),
+    messages: document.querySelector('.messages'),
+    inputMessage: document.querySelector('.inputMessage'),
+    messageList: document.querySelector('#message-list'),
+    // pages
+    loginPage: document.querySelector('.login-ui'),
+    chatPage: document.querySelector('.chat.page'),
+}
 
-    // Prompt for setting a username
-    let username;
-    let connected = false;
-    let typing = false;
-    let lastTypingTime;
-    let $currentInput = $usernameInput.focus();
+const Client = {
+    username: null,
+    connected: false,
+    typing: false,
+    lastTypingTime: null
+}
 
-    let socket = io();
-
-    function addParticipantsMessage(data) {
+class AtariChat {
+    AddParticipant(data) {
         let message = '';
         if (data.numUsers === 1) {
             message += "There's 1 participant";
         } else {
             message += "There are " + data.numUsers + " participants";
         }
-        log(message);
+        console.log(message);
     }
-
-    // Sets the client's username
-    function setUsername() {
-        username = cleanInput($usernameInput.val().trim());
+    SetUserName() {
+        Client.username = Helpers.cleanInput(Elements.usernameInput.value);
 
         // If the username is valid
-        if (username) {
-            $loginPage.fadeOut();
-            $chatPage.show();
-            $loginPage.off('click');
+        if (Client.username) {
+            Helpers.fadeOut(Elements.loginPage, FADE_TIME);
+            Elements.loginPage.style.display = 'none';
 
             // Tell the server your username
-            socket.emit('add user', username);
+            console.log(Client.username);
+            socket.emit('add user', Client.username);
         }
     }
-
-    // Sends a chat message
-    function sendMessage() {
-        let message = $inputMessage.val();
+    SendMessage() {
+        let message = Elements.inputMessage.value;
         // Prevent markup from being injected into the message
-        message = cleanInput(message);
+        message = Helpers.cleanInput(message);
         // if there is a non-empty message and a socket connection
-        if (message && connected) {
-            $inputMessage.val('');
-            addChatMessage({
-                username: username,
+        if (message && Client.connected) {
+            Elements.inputMessage.value = '';
+            this.AddChatMessage({
+                username: Client.username,
                 message: message
             });
             // tell server to execute 'new message' and send along one parameter
             socket.emit('new message', message);
         }
     }
-
-    // Log a message
-    function log(message, options) {
-        let $el = $('<li>').addClass('log').text(message);
-        addMessageElement($el, options);
-    }
-
-    // Adds the visual chat message to the message list
-    function addChatMessage(data, options) {
-        // Don't fade the message in if there is an 'X was typing'
-        let $typingMessages = getTypingMessages(data);
+    AddChatMessage(data, options) {
+        let typingMessages = Helpers.getTypingMessages(data) || [];
         options = options || {};
-        if ($typingMessages.length !== 0) {
+        options.currentUser = data.username;
+
+        if (typingMessages.length !== 0) {
             options.fade = false;
-            $typingMessages.remove();
+            Helpers.fadeOut(typingMessages, FADE_TIME);
         }
 
-        let $usernameDiv = $('<span class="username"/>')
-            .text(data.username)
-            .css('color', getUsernameColor(data.username));
-        let $messageBodyDiv = $('<span class="messageBody">')
-            .text(data.message);
+        let usernameDiv = Helpers.createElement('span', {
+            class: 'username',
+            style: `color: ${Helpers.getUsernameColor(data.username)}`,
+            text: data.username
+        });
+
+        let messageBodyDiv = Helpers.createElement('span', {
+            class: 'messageBody',
+            text: data.message,
+        });
 
         let typingClass = data.typing ? 'typing' : '';
-        let $messageDiv = $('<li class="message"/>')
-            .data('username', data.username)
-            .addClass(typingClass)
-            .css('display', 'flex')
-            .append($usernameDiv, $messageBodyDiv);
-
-        addMessageElement($messageDiv, options);
-    }
-
-    // Adds the visual chat typing message
-    function addChatTyping(data) {
-        data.typing = true;
-        data.message = 'is typing';
-        addChatMessage(data);
-    }
-
-    // Removes the visual chat typing message
-    function removeChatTyping(data) {
-        getTypingMessages(data).fadeOut(function () {
-            $(this).remove();
+        let messageContainer = Helpers.createElement('div', {
+            class: 'messageContainer',
         });
+        let message = Helpers.createElement('li', {
+            class: 'message',
+            'data-username': data.username,
+            style: 'display: flex'
+        });
+        Helpers.append(message, [Helpers.append(messageContainer, [usernameDiv, messageBodyDiv])]);
+        this.AddMessageElement(message, options);
     }
-
-    // Adds a message element to the messages and scrolls to the bottom
-    // el - The element to add as a message
-    // options.fade - If the element should fade-in (default = true)
-    // options.prepend - If the element should prepend
-    //   all other messages (default = false)
-    function addMessageElement(el, options) {
-        let $el = $(el);
-
+    AddMessageElement(el, options) {
         // Setup default options
-        if (!options) {
-            options = {};
-        }
-        if (typeof options.fade === 'undefined') {
-            options.fade = true;
-        }
-        if (typeof options.prepend === 'undefined') {
-            options.prepend = false;
+        options = (!options ? {} : options);
+        if (typeof options.fade === 'undefined') { options.fade = true; }
+        if (typeof options.prepend === 'undefined') { options.prepend = false; }
+        if (typeof options.currentUser === 'undefined') {
+            options.currentUser = Client.username || socket.username;
         }
 
         // Apply options
-        if (options.fade) {
-            $el.hide().fadeIn(FADE_TIME);
+        if (options.fade && options.isTyping) {
+            Helpers.fadeOut(el, FADE_TIME);
         }
         if (options.prepend) {
-            $messages.prepend($el);
+            Elements.messages.prepend(el);
         } else {
-            $messages.append($el);
+            Elements.messages.appendChild(el);
         }
-        $messages[0].scrollTop = $messages[0].scrollHeight;
+        if (options.currentUser == Client.username) {
+            el.style.cssText = 'display: flex; flex-direction: row-reverse';
+        }
+        else{
+            el.children[0].children[0].style.alignSelf = 'flex-start';
+        }
+        // Elements.messages[0].scrollTop = Elements.messages[0].scrollHeight;
     }
-
-    // Prevents input from having injected markup
-    function cleanInput(input) {
-        return $('<div/>').text(input).html();
-    }
-
-    // Updates the typing event
-    function updateTyping() {
-        if (connected) {
-            if (!typing) {
-                typing = true;
+    UpdateTyping() {
+        if (Client.connected) {
+            if (!Client.typing) {
+                Client.typing = true;
                 socket.emit('typing');
             }
-            lastTypingTime = (new Date()).getTime();
+            Client.lastTypingTime = (new Date()).getTime();
 
-            setTimeout(function () {
+            setTimeout(() => {
                 let typingTimer = (new Date()).getTime();
-                let timeDiff = typingTimer - lastTypingTime;
-                if (timeDiff >= TYPING_TIMER_LENGTH && typing) {
+                let timeDiff = typingTimer - Client.lastTypingTime;
+                if (timeDiff >= TYPING_TIMER_LENGTH && Client.typing) {
                     socket.emit('stop typing');
-                    typing = false;
+                    Client.typing = false;
                 }
             }, TYPING_TIMER_LENGTH);
         }
     }
-
-    // Gets the 'X is typing' messages of a user
-    function getTypingMessages(data) {
-        return $('.typing.message').filter(function (i) {
-            return $(this).data('username') === data.username;
-        });
+    AddChatTyping(data) {
+        data.typing = true;
+        data.message = 'is typing';
+        return true;
     }
+    RemoveChatTyping(data) {
+        // TODO: Make this function work properly
+        // Helpers.fadeOut(Helpers.getTypingMessages(data), FADE_TIME);
+        return;
+    }
+    Observer(watchElement) {
+        let conf = { attributes: true, childList: true };
 
-    // Gets the color of a username through our hash function
-    function getUsernameColor(username) {
-        // Compute hash code
+        let callback = (mutationsList) => {
+            for (let mutation of mutationsList) {
+                if (mutation.type == 'childList') {
+                    watchElement.scrollTop = watchElement.scrollHeight;
+                }
+                else if (mutation.type == 'attributes') {
+                    console.log(`${mutation.attributeName} -> modified`);
+                }
+            }
+        };
+
+        let observer = new MutationObserver(callback);
+        return observer.observe(watchElement, conf);
+    }
+}
+
+const Helpers = {
+    append: (parent, children) => {
+        if (typeof children === 'object') {
+            for (let i = 0; i < children.length; i++) {
+                parent.appendChild(children[i]);
+            };
+            return parent;
+        }
+        if (typeof children === 'string') {
+            return parent.appendChild(children);
+        }
+    },
+    createElement: (element, options) => {
+        let el = document.createElement(element);
+        for (let i in options) {
+            if (i.toString() == 'text') {
+                el.innerText = options[i];
+            } else {
+                el.setAttribute(i, options[i]);
+            }
+        }
+        return el;
+    },
+    fadeOut: (el, duration) => {
+        let fadeTarget = el;
+        let fadeEffect = setInterval(() => {
+            if (!fadeTarget.style.opacity) {
+                fadeTarget.style.opacity = 1;
+            }
+            if (fadeTarget.style.opacity < 0.1) {
+                clearInterval(fadeEffect);
+            } else {
+                fadeTarget.style.opacity -= 0.1;
+            }
+        }, duration);
+        el.parentNode.removeChild(el);
+    },
+    fadeIn: (el, duration) => {
+        let fadeTarget = el;
+        let fadeEffect = setInterval(() => {
+            if (!fadeTarget.style.opacity) {
+                fadeTarget.style.opacity = 0;
+            }
+            if (fadeTarget.style.opacity < 1) {
+                clearInterval(fadeEffect);
+            } else {
+                fadeTarget.style.opacity += 0.1;
+            }
+        }, duration);
+    },
+    getTypingMessages: (data) => {
+        let typingData = [];
+        return document.querySelectorAll('.typing.message').forEach((el) => {
+            if (el.getAttribute('data-username') === data.username) {
+                console.log(el);
+                return el;
+            }
+            // couldn't find el
+            return false;
+        });
+    },
+    getUsernameColor: (username) => {
         let hash = 7;
         for (let i = 0; i < username.length; i++) {
             hash = username.charCodeAt(i) + (hash << 5) - hash;
@@ -186,117 +241,90 @@ $(document).ready(function () {
         // Calculate color
         let index = Math.abs(hash % COLORS.length);
         return COLORS[index];
+    },
+    cleanInput: (input) => {
+        return input.toString().trim();
     }
+}
 
-    // Keyboard events
+// Init
+let AtariChatClient = new AtariChat();
 
-    $window.keydown(function (event) {
-        // Auto-focus the current input when a key is typed
-        if (!(event.ctrlKey || event.metaKey || event.altKey)) {
-            $currentInput.focus();
+// Watch for DOM changes on the message list and run updates
+AtariChatClient.Observer(Elements.messageList);
+
+// Event listeners
+Window.addEventListener('keydown', (event) => {
+    if (!(event.ctrlKey || event.metaKey || event.altKey || event.spaceKey)) {
+        Elements.usernameInput.focus();
+    }
+    // When the client hits ENTER on their keyboard
+    if (event.keyCode === 13) {
+        if (Client.username) {
+            AtariChatClient.SendMessage();
+            socket.emit('stop typing');
+            Client.typing = false;
+        } else {
+            AtariChatClient.SetUserName();
         }
-        // When the client hits ENTER on their keyboard
-        if (event.which === 13) {
-            if (username) {
-                sendMessage();
-                socket.emit('stop typing');
-                typing = false;
-            } else {
-                setUsername();
-            }
-        }
-    });
+    }
+});
 
-    $inputMessage.on('input', function () {
-        updateTyping();
-    });
+Elements.inputMessage.addEventListener('input', () => {
+    AtariChatClient.UpdateTyping();
+});
+Elements.inputMessage.addEventListener('click', (e) => {
+    return true;
+})
 
-    // Focus input when clicking on the message input's border
-    $inputMessage.click(function () {
-        $inputMessage.focus();
-    });
 
-    // Socket events
+// Sockets
+socket.on('login', (data) => {
+    Client.connected = true;
+    let message = "Atari World Chat";
+    console.log(message);
+});
 
-    // Whenever the server emits 'login', log the login message
-    socket.on('login', function (data) {
-        connected = true;
-        // Display the welcome message
-        let message = "Atari";
-        log(message, {
-            prepend: true
-        });
-        addParticipantsMessage(data);
-    });
+// Whenever the server emits 'new message', update the chat body
+socket.on('new message', (data) => {
+    AtariChatClient.AddChatMessage(data);
+});
 
-    // Whenever the server emits 'new message', update the chat body
-    socket.on('new message', function (data) {
-        addChatMessage(data);
-    });
+// Whenever the server emits 'user joined', log it in the chat body
+socket.on('user joined', (data) => {
+    console.log(data.username + ' joined');
+    AtariChatClient.AddParticipant(data);
+});
 
-    // Whenever the server emits 'user joined', log it in the chat body
-    socket.on('user joined', function (data) {
-        log(data.username + ' joined');
-        addParticipantsMessage(data);
-    });
+// Whenever the server emits 'user left', log it in the chat body
+socket.on('user left', (data) => {
+    console.log(data.username + ' left');
+    AtariChatClient.AddParticipant(data);
+    // console.log(data);
+});
 
-    // Whenever the server emits 'user left', log it in the chat body
-    socket.on('user left', function (data) {
-        log(data.username + ' left');
-        addParticipantsMessage(data);
-        removeChatTyping(data);
-    });
+// Whenever the server emits 'typing', show the typing message
+socket.on('typing', (data) => {
+    AtariChatClient.AddChatTyping(data);
+});
 
-    // Whenever the server emits 'typing', show the typing message
-    socket.on('typing', function (data) {
-        addChatTyping(data);
-    });
+// Whenever the server emits 'stop typing', kill the typing message
+socket.on('stop typing', (data) => {
+    AtariChatClient.RemoveChatTyping(data);
+    // console.log(data);
+});
 
-    // Whenever the server emits 'stop typing', kill the typing message
-    socket.on('stop typing', function (data) {
-        removeChatTyping(data);
-    });
+socket.on('disconnect', () => {
+    console.log('you have been disconnected');
+});
 
-    socket.on('disconnect', function () {
-        log('you have been disconnected');
-    });
+socket.on('reconnect', () => {
+    console.log('you have been reconnected');
+    if (Client.username) {
+        socket.emit('add user', Client.username);
+    }
+});
 
-    socket.on('reconnect', function () {
-        log('you have been reconnected');
-        if (username) {
-            socket.emit('add user', username);
-        }
-    });
-
-    socket.on('reconnect_error', function () {
-        log('attempt to reconnect has failed');
-    });
-
-    // auto scroll using observers
-    var targetNode = document.getElementById('message-list');
-
-    // Options for the observer (which mutations to observe)
-    var conf = { attributes: true, childList: true };
-
-    // Callback function to execute when mutations are observed
-    var callback = function (mutationsList) {
-        for (var mutation of mutationsList) {
-            if (mutation.type == 'childList') {
-                    targetNode.scrollTop = targetNode.scrollHeight;
-                console.log('A child node has been added or removed.');
-            }
-            else if (mutation.type == 'attributes') {
-                console.log('The ' + mutation.attributeName + ' attribute was modified.');
-            }
-        }
-    };
-
-    // Create an observer instance linked to the callback function
-    var observer = new MutationObserver(callback);
-
-    // Start observing the target node for configured mutations
-    observer.observe(targetNode, conf);
-
-    // Later, you can stop observing
-    // observer.disconnect();
+socket.on('reconnect_error', () => {
+    console.log('attempt to reconnect has failed');
 });

@@ -52,17 +52,19 @@ const Enemy = {
     created: false
 };
 
-const sounds = {
+const Sound = {
     backgroundSound: null,
     playerShoot: null,
     playerDeath: null,
+    enemyDeath: null,
 };
 
 const FX = {
     gameOver: {
         sprite: null,
         img: '../assets/game-over.png'
-    }
+    },
+    font: null,
 };
 /**
  * Create a new Enemy ship
@@ -120,7 +122,11 @@ function GenerateEnemies(state, intervalID, time) {
     return false;
 }
 
-
+/**
+ * Collision Detection function. Test collision between enemy object and a bullet
+ * @param {p5.Sprite} other The Sprite to check collision against
+ * @param {p5.Sprite} bullet The bullet fired by the player
+ */
 function CheckCollision(other, bullet) {
     let scale = other.scaleFactor - 1;
 
@@ -147,6 +153,8 @@ function CheckCollision(other, bullet) {
         //     config.MAX_ENEMY = config.MAX_ENEMY + (Player.score % 10)
         // }
     }
+
+    Sound.enemyDeath.play();
     bullet.remove();
     other.remove();
 }
@@ -187,6 +195,11 @@ function destroyPlayer(player, enemy) {
      */
     if (Player.lives.value <= 0) {
         console.log(`Game Over`);
+        // play plater dead sound here
+
+        // Stop background song
+        Sound.backgroundSound.stop();
+
         setTimeout(() => {
             allSprites.forEach(sprite => {
                 sprite.remove();
@@ -208,18 +221,49 @@ function destroyPlayer(player, enemy) {
 }
 
 /**
+ * Preload game assets
+ */
+function preload() {
+    soundFormats('wav', 'mp3');
+
+    // Preload game over image
+    FX.gameOver.img = loadImage(FX.gameOver.img);
+    Sound.backgroundSound = loadSound('../assets/sounds/deadlocked-f777.mp3');
+    Sound.playerShoot = loadSound('../assets/sounds/player-shoot.wav');
+    Sound.enemyDeath = loadSound('../assets/sounds/enemy-death.wav');
+
+    // Control sound volumes
+    Sound.enemyDeath.setVolume(0.5);
+    Sound.playerShoot.setVolume(0.4);
+
+    FX.font = loadFont('../assets/fonts/pixel-font.ttf');
+}
+
+/**
+ * Event Listeners
+ */
+function keyPressed() {
+    // Pause the background sound if the shift key is pressed
+    if (keyCode == SHIFT) {
+        if (Sound.backgroundSound.isPlaying()) {
+            Sound.backgroundSound.pause();
+        } else {
+            Sound.backgroundSound.play();
+        }
+    }
+    else return;
+}
+
+/**
  * Setup function used by Processing to set up defaults
  */
 function setup() {
     // set Canvas size
-    let canvas = createCanvas(windowWidth / 2, windowHeight - 200);
+    let canvas = createCanvas(windowWidth / 2, windowHeight);
     canvas.parent('gameCanvas');
 
     // hide rhe cursor
     noCursor();
-    
-    // Preload game over image
-    FX.gameOver.img = loadImage(FX.gameOver.img);
 
     // Create groups to hold various elements
     config.BACK_GROUND = new Group();
@@ -253,8 +297,13 @@ function setup() {
         config.BACK_GROUND.add(stars);
     }
     config.BACK_GROUND.forEach((backgroundImg) => {
-        backgroundImg.setSpeed(backgroundImg.mass * 1.5, 90);
+        backgroundImg.setSpeed(backgroundImg.mass * 3.5, 90);
     });
+
+    // trigger background sound
+    setTimeout(() => {
+        Sound.backgroundSound.play();
+    }, 3000);
 }
 
 /**
@@ -350,6 +399,7 @@ function draw() {
         bullet.addImage(loadImage(Player.bulletImg));
         bullet.setSpeed(10, 270);
         bullet.life = 100;
+        Sound.playerShoot.play();
         Player.bullets.add(bullet);
     }
 
@@ -367,7 +417,7 @@ function draw() {
 
     // Stop Creating Enemies if there are up to 50 on the screen
     if (Enemy.ships.length >= 50) {
-        config.GENERATE = false
+        GenerateEnemies(false, config.GENERATE_ENEMY_ID);
     }
 
     /**
@@ -383,6 +433,10 @@ function draw() {
         config.PAUSE == false;
     }
 
+    // Show user Score
+    fill(255).textSize(22);
+    textFont(FX.font);
+    text(`Score: ${Player.score}`, width - 200, 60);
     // draw all sprites on the screen
     drawSprites();
 }
