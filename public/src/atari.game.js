@@ -16,169 +16,112 @@ const Socket = io();
 
 /* Global Configs */
 const config = {
-    MARGIN: 40,
-    MAX_ENEMY: 10,
-    SCORE: 0,
-    // scene is twice the size of the canvas
-    SCENE_W: 1200,
-    SCENE_H: 1600,
+    MARGIN: 0,
+    MAX_ENEMY: 2,
     LEVELS: 10,
+    PAUSE: false,
+    CURRENT_LEVEL: 0,
+    GENERATE: true,
+    ENEMY_COUNTDOWN: 3000,
     BACK_GROUND: null,
-    PAUSE: false
-}
+    GENERATE_ENEMY_ID: null,
+};
 
-/** 
- * The Player Object
- * Player.ship: The player's ship
- * PLayer.bullets: A processing group to hold the player bullets
- * Player.bulletImg: Player bullet sprite
- * Player.sprite: Player's sprite
- * Player.explosion: Explosion used when the player dies
- * 
- */
-
+//The Player Object
 const Player = {
     ship: null,
     bullets: null,
+    score: 0,
     bulletImg: '../assets/bullet.png',
     sprite: '../assets/player.png',
     explosion: ['../assets/fx/explosion0.png', '../assets/fx/explosion1.png'],
-    lives: 3
-}
+    lives: {
+        value: 3,
+        img: '../assets/live.png',
+        sprite: []
+    }
+};
 
-/** 
- * The Enemy Object
- * Enemy.ship: The enemy's ship
- * Enemy.bullets: A processing group to hold the enemy bullets
- * Enemy.bulletImg: Enemy bullet sprite
- * Enemy.sprite: Enemy sprite
- * Enemy.explosion: Explosion used when the enemy dies
- */
+// The Enemy Object
 const Enemy = {
     ships: null,
     bullets: null,
     sprite: '../assets/enemy.png',
-    bulletImg: '../assets/bullet.png',
+    bulletImg: '../assets/enemy_fire.png',
     explosion: '../assets/explosion.png',
     created: false
-}
+};
 
-function setup() {
-    // set Canvas size
-    let canvas = createCanvas(windowWidth / 2, windowHeight - 200);
-    canvas.parent('gameCanvas');
-    background(0);
+const sounds = {
+    backgroundSound: null,
+    playerShoot: null,
+    playerDeath: null,
+};
 
-    // hide rhe cursor
-    noCursor();
+const FX = {
+    gameOver: {
+        sprite: null,
+        img: '../assets/game-over.png'
+    }
+};
+/**
+ * Create a new Enemy ship
+ * @param {Number} x The x-coordinate of the ship. This value is used in placing the ship on the canvas
+ * @param {Number} y The y-coordinate of the ship. This value is used in placing the ship on the canvas
+ * @param {Number} scaleFactor Value used in calculating the `enemyShip.scale` value
+ */
+function createEnemy(x, y, scaleFactor) {
+    let enemyShip = createSprite(x, y);
+    let enemyShipImg = loadImage(Enemy.sprite);
+    enemyShip.scale = scaleFactor / 4;
+    enemyShip.addImage(enemyShipImg);
 
-    //create player sprites
-    Player.ship = createSprite(10, 10);
-    Player.ship.addImage(loadImage(Player.sprite));
-    config.BACK_GROUND = new Group();
+    enemyShip.setSpeed(2.5 + random(Player.ship.getSpeed()), random(360));
+    enemyShip.scaleFactor = scaleFactor;
 
-    //create some background for visual reference
-    for (let i = 0; i < 10; i++) {
-        //create a sprite and add the 3 animations
-        let planets = createSprite(random(-width, config.SCENE_W + width), random(-height, config.SCENE_H + height));
-        let stars = createSprite(random(-width, config.SCENE_W + width), random(-height, config.SCENE_H + height));
-        //cycles through rocks 0 1 2
-        planets.addAnimation('normal', '../assets/space/far-planets.png');
-        stars.addAnimation('normal', '../assets/space/stars.png');
-        config.BACK_GROUND.add(planets);
-        config.BACK_GROUND.add(stars);
+    if (scaleFactor == 2) {
+        enemyShip.scale = 0.6;
+    }
+    if (scaleFactor == 1) {
+        enemyShip.scale = 0.3;
     }
 
-    // create groups to hold bullets and enemy ships
-    Player.bullets = new Group();
-    Enemy.bullets = new Group();
-    Enemy.ships = new Group();
+    enemyShipImg.mass = 2 + enemyShip.scale;
+    Enemy.ships.add(enemyShip);
+    return enemyShip;
+}
 
-    // create enemies two seconds after game starts
-    setTimeout(() => {
-        for (let i = 0; i < config.MAX_ENEMY; i++) {
-            let angle = random(360);
-            let enemyPos = {
-                x: (width / 2) + 1000 * cos(radians(angle)),
-                y: (height / 2) + 1000 * sin(radians(angle))
+/**
+ * Create new enemies every config.ENEMY_COUNTDOWN seconds
+ * @param {Boolean} state Generation state. Used in determining whether to generate enemies or not
+ * @param {Number} intervalID The ID of the interval. This is important for the `pause` feature to work
+ * @param {Number} time Timeout value passed into generator
+ * @returns An interval if specified | Clear the current interval if `state == false` | Returns false
+ */
+function GenerateEnemies(state, intervalID, time) {
+    if (state) {
+        return intervalID = setInterval(() => {
+            for (let i = 0; i < config.MAX_ENEMY; i++) {
+                let angle = random(360);
+                let enemyPos = {
+                    x: random(width / 2),
+                    y: random(height / 4)
+                }
+                createEnemy(enemyPos.x, enemyPos.y, 2);
             }
-            createEnemy(enemyPos.x, enemyPos.y, 3);
-        }
 
-        // let the draw method know that enemies have been created
-        Enemy.created == true;
-    }, 3000);
+            // let the draw method know that enemies have been created
+            Enemy.created = true;
+        }, time);
+    }
+    else {
+        return clearInterval(intervalID);
+    }
+    return false;
 }
 
-function draw() {
-    background(0);
 
-    // set player position and size
-    Player.ship.position.x = constrain(mouseX, 0, windowWidth / 2);
-    Player.ship.position.y = mouseY;
-    Player.ship.scale = 0.3;
-
-    // CAMERA SETUP
-    //set the camera position to the player position
-    camera.zoom = (mouseIsPressed) ? 0.5 : 1;
-
-    camera.position.x = Player.ship.position.x;
-    camera.position.y = Player.ship.position.y;
-    camera.off();
-
-    // constrain player to the configured scene size
-    if (Player.ship.position.x < 0) {
-        Player.ship.position.x = 0;
-    }
-    if (Player.ship.position.y < 0) {
-        Player.ship.position.y = 0;
-    }
-    if (Player.ship.position.x > config.SCENE_W) {
-        Player.ship.position.x = config.SCENE_W;
-    }
-    if (Player.ship.position.y > config.SCENE_H) {
-        Player.ship.position.y = config.SCENE_H;
-    }
-
-    // constrain all sprites with a 40px margin of the canvas
-    allSprites.forEach(sprite => {
-        if (sprite.position.x < -config.MARGIN) sprite.position.x = width + config.MARGIN;
-        if (sprite.position.x > width + config.MARGIN) sprite.position.x = -config.MARGIN;
-        if (sprite.position.y < -config.MARGIN) sprite.position.y = height + config.MARGIN;
-        if (sprite.position.y > height + config.MARGIN) sprite.position.y = -config.MARGIN;
-    });
-
-    // check collision between bullets and enemy ships
-    Enemy.ships.collide(Player.bullets, CheckHit);
-    Player.ship.collide(Enemy.ships, destroyPlayer);
-
-    // HACK: fire the bullets if space key is pressed
-    // TODO: Use a mousePressed function instead to test if user is shooting
-    if (keyWentDown('space')) {
-        let bullet = createSprite(Player.ship.position.x, Player.ship.position.y);
-        bullet.addImage(loadImage(Player.bulletImg));
-        bullet.setSpeed(10 + Player.ship.getSpeed(), 270);
-        bullet.life = 40;
-        Player.bullets.add(bullet);
-    }
-
-    if (Enemy.ships.length <= 0 && Enemy.created == true) {
-        console.log("Level Complete");
-    }
-
-    // draw all sprites on the screen
-    drawSprites();
-    if (keyWentDown('p') && config.PAUSE == false) {
-        config.PAUSE == true;
-        noLoop();
-    }
-    if (keyWentDown('p') && config.PAUSE == true) {
-        config.PAUSE == false;
-        loop();
-    }
-}
-
-function CheckHit(other, bullet) {
+function CheckCollision(other, bullet) {
     let scale = other.scaleFactor - 1;
 
     if (scale > 0) {
@@ -196,54 +139,26 @@ function CheckHit(other, bullet) {
     }
 
     if (other.scale <= 0.3) {
-        config.SCORE += 10;
+        Player.score += 10;
 
         // send score to server
-        Socket.emit('current score', config.SCORE);
-        // if(config.SCORE > config.MAX_ENEMY){
-        //     config.MAX_ENEMY = config.MAX_ENEMY + (config.SCORE % 10)
+        Socket.emit('current score', Player.score);
+        // if(Player.score > config.MAX_ENEMY){
+        //     config.MAX_ENEMY = config.MAX_ENEMY + (Player.score % 10)
         // }
     }
     bullet.remove();
     other.remove();
 }
 
-function createEnemy(x, y, scaleFactor) {
-    let enemyShip = createSprite(x, y);
-    let enemyShipImg = loadImage(Enemy.sprite);
-    enemyShip.scale = scaleFactor / 4;
-    enemyShip.addImage(enemyShipImg);
-
-    enemyShip.setSpeed(2.5 - (scaleFactor / 2), random(360));
-    //a.debug = true;
-    enemyShip.scaleFactor = scaleFactor;
-
-    if (scaleFactor == 2) {
-        enemyShip.scale = 0.6;
-    }
-    if (scaleFactor == 1) {
-        enemyShip.scale = 0.3;
-    }
-
-    enemyShipImg.mass = 2 + enemyShip.scale;
-    Enemy.ships.add(enemyShip);
-
-    setInterval(() => {
-        if (enemyShip.position.y > Player.ship.position.y) {
-            let bullet = createSprite(enemyShip.position.x, enemyShip.position.y);
-            bullet.addImage(loadImage(Enemy.bulletImg));
-            bullet.setSpeed(5 + enemyShip.getSpeed(), enemyShip.rotation + 90);
-            bullet.life = 40;
-            Enemy.bullets.add(bullet);
-        }
-
-    }, 2000);
-
-    return enemyShip;
-}
-
+/**
+ * Callback function for when player hits an enemy
+ * 
+ * @param {p5.Sprite} player The player sprite
+ * @param {p5.Sprite} enemy Enemy sprite
+ */
 function destroyPlayer(player, enemy) {
-    let lives = Player.lives;
+    let lives = Player.lives.value;
     let playerExplosion = createSprite(player.position.x + 2, player.position.y + 2);
     for (let i = 0; i < 3; i++) {
         playerExplosion.addAnimation('small', Player.explosion[0]);
@@ -258,16 +173,216 @@ function destroyPlayer(player, enemy) {
     playerExplosion.changeAnimation('large');
     console.log('lives', lives);
 
+    // remove one live img from array
+    console.log(Player.lives.sprite.length);
+    if (Player.lives.sprite.length > 0) {
+        Player.lives.sprite.pop().remove();
+    }
     enemy.remove();
-    Player.lives -= 1;
-    if (Player.lives <= 0) {
-        console.log('Game Over');
-        setTimeout(() => noLoop(), 100);
+    Player.lives.value -= 1;
+
+    /**
+     * If the player is out of lives, wait 100ms before ending the game loop.
+     * This gives the game a more realistic feeling
+     */
+    if (Player.lives.value <= 0) {
+        console.log(`Game Over`);
+        setTimeout(() => {
+            allSprites.forEach(sprite => {
+                sprite.remove();
+            });
+            FX.gameOver.sprite = createSprite(width / 2, height / 2);
+            FX.gameOver.sprite.addImage(FX.gameOver.img);
+            FX.gameOver.sprite.scale = 0.4;
+            FX.gameOver.sprite.position.x = width / 2;
+            FX.gameOver.sprite.position.y = height / 2;
+            noLoop();
+        }, 200);
         return;
     };
     Player.bullets.forEach((bullet) => {
         bullet.remove();
     });
 
-    Socket.emit('player hit', Player.lives);
+    Socket.emit('player hit', Player.lives.value);
+}
+
+/**
+ * Setup function used by Processing to set up defaults
+ */
+function setup() {
+    // set Canvas size
+    let canvas = createCanvas(windowWidth / 2, windowHeight - 200);
+    canvas.parent('gameCanvas');
+
+    // hide rhe cursor
+    noCursor();
+    
+    // Preload game over image
+    FX.gameOver.img = loadImage(FX.gameOver.img);
+
+    // Create groups to hold various elements
+    config.BACK_GROUND = new Group();
+    Player.bullets = new Group();
+    Enemy.bullets = new Group();
+    Enemy.ships = new Group();
+
+    // Create player sprite
+    Player.ship = createSprite(10, 10);
+    Player.ship.addImage(loadImage(Player.sprite));
+
+    // Player live setup
+    for (let i = 0; i < Player.lives.value; i++) {
+        Player.lives.sprite[i] = createSprite(5, 5);
+        Player.lives.sprite[i].addImage(loadImage(Player.lives.img));
+    }
+
+
+    // Create Enemies 
+    GenerateEnemies(config.GENERATE, config.GENERATE_ENEMY_ID, config.ENEMY_COUNTDOWN);
+
+    //create some background for visual reference
+    for (let i = 0; i < 10; i++) {
+        //create a sprite and add the 3 animations
+        let planets = createSprite(random(width), random(height));
+        let stars = createSprite(random(width), random(height));
+        //cycles through rocks 0 1 2
+        planets.addAnimation('normal', '../assets/space/far-planets.png');
+        stars.addAnimation('normal', '../assets/space/stars.png');
+        config.BACK_GROUND.add(planets);
+        config.BACK_GROUND.add(stars);
+    }
+    config.BACK_GROUND.forEach((backgroundImg) => {
+        backgroundImg.setSpeed(backgroundImg.mass * 1.5, 90);
+    });
+}
+
+/**
+ * Processing `draw()` function
+ */
+
+function draw() {
+    /**
+     * Scroll background infinitely
+     * If the stars or planet's position is greater than the canvas size reset its position
+     */
+    background(10);
+    config.BACK_GROUND.forEach(backgroundItem => {
+        backgroundItem.position.y += backgroundItem.width * 0.01;
+        if (backgroundItem.position.y > height) {
+            backgroundItem.position.y = 0;
+        }
+
+    });
+
+    // Show lives
+    for (let i = 0; i < Player.lives.sprite.length; i++) {
+        Player.lives.sprite[i].scale = 0.1;
+        Player.lives.sprite[i].position.x = (width - 100) - (i * 50);
+        Player.lives.sprite[i].position.y = 20;
+    }
+    /**
+     * Set player position and size
+     */
+    Player.ship.position.x = mouseX;
+    Player.ship.position.y = mouseY
+    Player.ship.scale = 0.3;
+
+    /**
+     * CAMERA SETUP
+     * Set the camera position to the player position
+     * If the mouse is pressed, change the zoom value of the camera
+     */
+    camera.zoom = (mouseIsPressed) ? 1 : 0.7;
+
+    camera.position.x = Player.ship.position.x;
+    camera.position.y = Player.ship.position.y;
+    camera.off();
+
+    /**
+     * Constrain player to the configured scene size
+     */
+    if (Player.ship.position.x < 0) {
+        Player.ship.position.x = 0;
+    }
+    if (Player.ship.position.y < 0) {
+        Player.ship.position.y = 0;
+    }
+    if (Player.ship.position.x > width) {
+        Player.ship.position.x = width;
+    }
+    if (Player.ship.position.y > height) {
+        Player.ship.position.y = height;
+    }
+
+    /**
+     * Obsolete comment: constrain all sprites with a 40px margin of the canvas
+     * TODO: Make this freaking work  properly
+     */
+    Enemy.ships.forEach(sprite => {
+        if (sprite.position.x <= 0 || sprite.position.x >= width) sprite.velocity.x *= -1;
+        // if (sprite.position.x > width + config.MARGIN) sprite.position.x = -config.MARGIN;
+        if (sprite.position.y <= 0 || sprite.position.y >= height) sprite.velocity.y *= -1;
+        // if (sprite.position.y > height + config.MARGIN) sprite.position.y = height / (height - 100);
+        // if (sprite.position.y > height + config.MARGIN) sprite.getDirection() = height / (height - 100);
+    });
+
+    /**
+     * Check collision between bullets and enemy ships
+     * Also check collision between player ship and enemy
+     */
+    Enemy.ships.collide(Player.bullets, CheckCollision);
+    Player.ship.collide(Enemy.ships, destroyPlayer);
+
+    /**
+     * Remove a bullet if it goes beyond the visible canvas
+     */
+    Player.bullets.forEach((bullet) => {
+        if (bullet.position.y < 1) {
+            bullet.remove();
+        }
+    });
+
+    // HACK: fire the bullets if space key is pressed
+    // TODO: Use a mousePressed function instead to test if user is shooting
+    if (keyWentDown('space')) {
+        let bullet = createSprite(Player.ship.position.x, Player.ship.position.y);
+        bullet.addImage(loadImage(Player.bulletImg));
+        bullet.setSpeed(10, 270);
+        bullet.life = 100;
+        Player.bullets.add(bullet);
+    }
+
+    /**
+     * TODO: Make this work properly.
+     */
+    if (Player.score > 0 && Player.score % 100 === 0) {
+        console.log(`Level ${config.CURRENT_LEVEL} completed`);
+        config.ENEMY_COUNTDOWN -= Player.score;
+
+        // config.CURRENT_LEVEL += 1;
+        // config.MAX_ENEMY += 1;
+    }
+
+
+    // Stop Creating Enemies if there are up to 50 on the screen
+    if (Enemy.ships.length >= 50) {
+        config.GENERATE = false
+    }
+
+    /**
+     * Pause Game when `P` key is pressed
+     */
+    if (keyCode == 80 && config.PAUSE == false) {
+        GenerateEnemies(false, config.GENERATE_ENEMY_ID);
+        config.PAUSE == true;
+        config.GENERATE = false;
+    }
+    else if (keyCode == 80 && config.PAUSE == true) {
+        GenerateEnemies(config.PAUSE, config.GENERATE_ENEMY_ID);
+        config.PAUSE == false;
+    }
+
+    // draw all sprites on the screen
+    drawSprites();
 }
