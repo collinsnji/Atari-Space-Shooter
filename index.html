@@ -1,0 +1,69 @@
+<!--
+ Copyright (C) 2018 collingrimm
+ 
+ This file is part of Atari Space Shooter.
+ 
+ Atari Space Shooter is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ Atari Space Shooter is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with Atari Space Shooter.  If not, see <http://www.gnu.org/licenses/>.
+ 
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Atari Space Shooter</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="libs/p5.min.js"></script>
+    <script src="libs/p5.play.js"></script>
+
+    <script src="dist/atari.bundle.js"></script>
+    <link rel='stylesheet' href='dist/style.css'>
+</head>
+
+<body>
+    <section class="login-ui" id="loginPage">
+        <div class="login-background">
+            <div class="login-content">
+                <h3 class="login-message">Enter your name to join Atari Space Shooter</h3>
+                <input id="username" class="usernameInput" type="text" maxlength="16" autofocus="true">
+            </div>
+        </div>
+    </section>
+    <section class="atari">
+        <div class="chat">
+            <div class="pages">
+                <span class="page">
+                    <div class="chatArea" id="chatAreaMsg">
+                        <ul class="messages" id="message-list"></ul>
+                    </div>
+                    <input class="inputMessage" placeholder="Say Something..." />
+                </span>
+            </div>
+        </div>
+        </div>
+        <div class="gameRender">
+            <div class="game-renderer" id="gameCanvas">
+                <!-- Game Canvas will be inserted here -->
+            </div>
+            <div class="scoreboard" id="scoreBoard"></div>
+        </div>
+    </section>
+    </script>
+    <script src="src/Messaging.js"></script>
+</body>
+
+</html>

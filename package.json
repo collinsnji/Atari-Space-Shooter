@@ -1,15 +1,18 @@
 {
-  "name": "atati-space-asteroid",
-  "version": "0.0.0",
+  "name": "atati-space-shooter",
+  "version": "1.0.0",
   "description": "A simple Atari Space Shooter game (with a twist) ",
   "main": "index.js",
   "author": "Collin Grimm <hey@collingrimm.me>",
   "private": true,
-  "license": "MIT",
+  "license": "GPLv2",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo 'No Test'",
-    "compile-css": "compass watch --output-style compressed"
+    "start": "npm run build && node index",
+    "test": "echo 'No Test Yet'",
+    "build": "webpack --mode production",
+    "postinstall": "cp libs/p5.play.js node_modules/p5/lib/addons",
+    "dev": "webpack --watch --mode development",
+    "dev-server": "node index"
   },
   "repository": {
     "type": "git",
@@ -28,6 +31,16 @@
   "homepage": "https://github.com/collinsnji/Atari-Space-Shooter#readme",
   "dependencies": {
     "express": "4.13.4",
+    "p5": "^0.6.1",
     "socket.io": "^2.0.4"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.11",
+    "extract-text-webpack-plugin": "^4.0.0-beta.0",
+    "node-sass": "^4.9.0",
+    "sass-loader": "^7.0.3",
+    "style-loader": "^0.21.0",
+    "webpack": "^4.11.1",
+    "webpack-cli": "^3.0.3"
   }
 }
