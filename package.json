@@ -7,12 +7,11 @@
   "private": true,
   "license": "GPLv2",
   "scripts": {
-    "start": "npm run build && node index",
+    "start": "node index",
     "test": "echo 'No Test Yet'",
     "build": "webpack --mode production",
     "postinstall": "cp libs/p5.play.js node_modules/p5/lib/addons",
-    "dev": "webpack --watch --mode development",
-    "dev-server": "node index"
+    "dev": "webpack --watch --mode development"
   },
   "repository": {
     "type": "git",
