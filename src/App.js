@@ -26,6 +26,7 @@ import './scss/style.scss';
 import { Config, Player, Enemy, FX, Sound } from './Config';
 import { CheckCollision, PlayerCollision } from './CollisionDetection';
 import { GenerateEnemy } from './CreateEnemy';
+import { BackgroundAnimation } from './Background';
 
 
 /**
@@ -53,6 +54,8 @@ const AtariSpaceShooter = (p5) => {
     p5.preload = () => {
         // Preload game over image
         FX.gameOver.img = p5.loadImage(FX.gameOver.img);
+        FX.soundOn.img = p5.loadImage(FX.soundOn.img);
+
         Sound.backgroundSound = p5.loadSound('../assets/sounds/deadlocked-f777.mp3');
         Sound.playerShoot = p5.loadSound('../assets/sounds/player-shoot.wav');
         Sound.enemyDeath = p5.loadSound('../assets/sounds/enemy-death.wav');
@@ -92,7 +95,6 @@ const AtariSpaceShooter = (p5) => {
         p5.noCursor();
 
         // Create groups to hold various elements
-        Config.BACK_GROUND = new p5.Group();
         Player.bullets = new p5.Group();
         Enemy.bullets = new p5.Group();
         Enemy.ships = new p5.Group();
@@ -112,19 +114,7 @@ const AtariSpaceShooter = (p5) => {
         GenerateEnemy(Config.GENERATE, Config.GENERATE_ENEMY_ID, Config.ENEMY_COUNTDOWN);
 
         //create some background for visual reference
-        for (let i = 0; i < 10; i++) {
-            //create a sprite and add the 3 animations
-            let planets = p5.createSprite(p5.random(p5.width), p5.random(p5.height));
-            let stars = p5.createSprite(p5.random(p5.width), p5.random(p5.height));
-            //cycles through rocks 0 1 2
-            planets.addAnimation('normal', '../assets/space/far-planets.png');
-            stars.addAnimation('normal', '../assets/space/stars.png');
-            Config.BACK_GROUND.add(planets);
-            Config.BACK_GROUND.add(stars);
-        }
-        Config.BACK_GROUND.forEach((backgroundImg) => {
-            backgroundImg.setSpeed(backgroundImg.mass * 3.5, 90);
-        });
+        BackgroundAnimation();
 
         // trigger background sound
         setTimeout(() => {
@@ -263,6 +253,14 @@ const AtariSpaceShooter = (p5) => {
         p5.fill(255).textSize(22);
         p5.textFont(FX.font);
         p5.text(`Score: ${Player.score}`, p5.width - 200, 60);
+
+        // show sound mute button
+        FX.soundOn.sprite = p5.createSprite(p5.width - 200, 80);
+        FX.soundOn.sprite.addImage(FX.soundOn.img);
+        FX.soundOn.sprite.scale = 2;
+        // FX.soundOn.sprite.position.x = p5.width / 2;
+        // FX.gameOver.sprite.position.y = p5.height / 2;
+
         // draw all sprites on the screen
         p5.drawSprites();
     }

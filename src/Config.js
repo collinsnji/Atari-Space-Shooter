@@ -67,5 +67,9 @@ export const FX = {
         sprite: null,
         img: '../assets/game-over.png'
     },
+    soundOn: {
+        sprite: null,
+        img: '../assets/fx/sound.png'
+    },
     font: null,
 };
