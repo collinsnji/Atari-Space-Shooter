@@ -18,6 +18,8 @@
  * 
  */
 
+import { Player, Enemy } from './Config';
+
 /**
  * Create a new Enemy ship
  * @param {Number} x The x-coordinate of the ship. This value is used in placing the ship on the canvas
@@ -25,9 +27,7 @@
  * @param {Number} scaleFactor Value used in calculating the `enemyShip.scale` value
  */
 
-import { Player, Config, Enemy } from './Config';
-
-export function CreateEnemy(x, y, scaleFactor) {
+export function CreateEnemy(x, y, scaleFactor = 2) {
     let enemyShip = p5.createSprite(x, y);
     let enemyShipImg = p5.loadImage(Enemy.sprite);
     enemyShip.scale = scaleFactor / 4;
@@ -46,31 +46,4 @@ export function CreateEnemy(x, y, scaleFactor) {
     enemyShipImg.mass = 2 + enemyShip.scale;
     Enemy.ships.add(enemyShip);
     return enemyShip;
-}
-
-/**
- * Create new enemies every config.ENEMY_COUNTDOWN seconds
- * @param {Boolean} state Generation state. Used in determining whether to generate enemies or not
- * @param {Number} intervalID The ID of the interval. This is important for the `pause` feature to work
- * @param {Number} time Timeout value passed into generator
- * @returns An interval if specified | Clear the current interval if `state == false` | Returns false
- */
-export function GenerateEnemy(state, intervalID, time) {
-    if (state) {
-        return intervalID = setInterval(() => {
-            for (let i = 0; i < Config.MAX_ENEMY; i++) {
-                let enemyPos = {
-                    x: p5.random(p5.width / 2),
-                    y: p5.random(p5.height / 4)
-                }
-                CreateEnemy(enemyPos.x, enemyPos.y, 2);
-            }
-
-            // let the draw method know that enemies have been created
-            Enemy.created = true;
-        }, time);
-    }
-    else {
-        return clearInterval(intervalID);
-    }
 }

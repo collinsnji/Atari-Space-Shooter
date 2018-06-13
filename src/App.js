@@ -19,14 +19,12 @@
  */
 
 import p5 from 'p5/lib/p5';
-import 'p5/lib/addons/p5.sound';
 import 'p5/lib/addons/p5.play';
 
 import './scss/style.scss';
-import { Config, Player, Enemy, FX, Sound } from './Config';
+import { Config, Player, Enemy, FX } from './Config';
 import { CheckCollision, PlayerCollision } from './CollisionDetection';
-import { GenerateEnemy } from './CreateEnemy';
-import { BackgroundAnimation } from './Background';
+import { CreateEnemy } from './CreateEnemy';
 
 
 /**
@@ -49,37 +47,19 @@ const AtariSpaceShooter = (p5) => {
     const windowHeight = p5.windowHeight;
 
     /**
-     * Preload game assets. These include sounds, images and background assets
+     * Preload game assets. These include images and background assets
      */
     p5.preload = () => {
         // Preload game over image
         FX.gameOver.img = p5.loadImage(FX.gameOver.img);
-        FX.soundOn.img = p5.loadImage(FX.soundOn.img);
-
-        Sound.backgroundSound = p5.loadSound('../assets/sounds/deadlocked-f777.mp3');
-        Sound.playerShoot = p5.loadSound('../assets/sounds/player-shoot.wav');
-        Sound.enemyDeath = p5.loadSound('../assets/sounds/enemy-death.wav');
-
-        // Control sound volumes
-        Sound.enemyDeath.setVolume(0.5);
-        Sound.playerShoot.setVolume(0.4);
-
         FX.font = p5.loadFont('../assets/fonts/pixel-font.ttf');
     }
 
     /**
-     * Event Listeners
+     * Begin game when mouse is clicked
      */
-    p5.keyPressed = () => {
-        // Pause the background sound if the shift key is pressed
-        if (p5.keyCode == p5.SHIFT) {
-            if (Sound.backgroundSound.isPlaying()) {
-                Sound.backgroundSound.pause();
-            } else {
-                Sound.backgroundSound.play();
-            }
-        }
-        else return;
+    p5.mousePressed = () => {
+        Config.GAME_INIT = false;
     }
 
     /**
@@ -91,13 +71,11 @@ const AtariSpaceShooter = (p5) => {
         let canvas = p5.createCanvas(windowWidth / 2, windowHeight);
         canvas.parent('gameCanvas');
 
-        // hide rhe cursor
-        p5.noCursor();
-
         // Create groups to hold various elements
         Player.bullets = new p5.Group();
         Enemy.bullets = new p5.Group();
         Enemy.ships = new p5.Group();
+        Config.BACK_GROUND = new p5.Group();
 
         // Create player sprite
         Player.ship = p5.createSprite(10, 10);
@@ -109,17 +87,32 @@ const AtariSpaceShooter = (p5) => {
             Player.lives.sprite[i].addImage(p5.loadImage(Player.lives.img));
         }
 
+        // Create some background elements for visual reference
+        for (let i = 0; i < 10; i++) {
+            //create a sprite and add the 3 animations
+            let planets = p5.createSprite(p5.random(p5.width), p5.random(p5.height));
+            let stars = p5.createSprite(p5.random(p5.width), p5.random(p5.height));
+            //cycles through rocks 0 1 2
+            planets.addAnimation('normal', '../assets/space/far-planets.png');
+            stars.addAnimation('normal', '../assets/space/stars.png');
+            Config.BACK_GROUND.add(planets);
+            Config.BACK_GROUND.add(stars);
+        }
 
-        // Create Enemies 
-        GenerateEnemy(Config.GENERATE, Config.GENERATE_ENEMY_ID, Config.ENEMY_COUNTDOWN);
-
-        //create some background for visual reference
-        BackgroundAnimation();
-
-        // trigger background sound
-        setTimeout(() => {
-            Sound.backgroundSound.play();
-        }, 3000);
+        /**
+         * Progressively inclrease the number of enemies in the game by setting a timer
+         * that increases the max enemies every 10 seconds
+         */
+        setInterval(() => {
+            if (Config.MAX_ENEMY <= Config.LEVELS) {
+                Config.CURRENT_LEVEL += 1;
+                Config.BACK_GROUND_SPEED += 0.5;
+                return Config.MAX_ENEMY += 1;
+            }
+            else {
+                return false;
+            }
+        }, Config.ENEMY_COUNTDOWN);
     }
 
     /**
@@ -127,12 +120,14 @@ const AtariSpaceShooter = (p5) => {
      */
 
     p5.draw = () => {
+
+        p5.background(10);
         /**
          * Scroll background infinitely
          * If the stars or planet's position is greater than the canvas size reset its position
          */
-        p5.background(10);
         Config.BACK_GROUND.forEach(backgroundItem => {
+            backgroundItem.setSpeed(Config.BACK_GROUND_SPEED, 90);
             backgroundItem.position.y += backgroundItem.width * 0.01;
             if (backgroundItem.position.y > p5.height) {
                 backgroundItem.position.y = 0;
@@ -140,129 +135,104 @@ const AtariSpaceShooter = (p5) => {
 
         });
 
-        // Show lives
-        for (let i = 0; i < Player.lives.sprite.length; i++) {
-            Player.lives.sprite[i].scale = 0.1;
-            Player.lives.sprite[i].position.x = (p5.width - 100) - (i * 50);
-            Player.lives.sprite[i].position.y = 20;
-        }
-        /**
-         * Set player position and size
-         */
-        Player.ship.position.x = p5.mouseX;
-        Player.ship.position.y = p5.mouseY
-        Player.ship.scale = 0.3;
-
-        /**
-         * CAMERA SETUP
-         * Set the camera position to the player position
-         * If the mouse is pressed, change the zoom value of the camera
-         */
-        p5.camera.zoom = (p5.mouseIsPressed) ? 1 : 0.7;
-
-        p5.camera.position.x = Player.ship.position.x;
-        p5.camera.position.y = Player.ship.position.y;
-        p5.camera.off();
-
-        /**
-         * Constrain player to the configured scene size
-         */
-        if (Player.ship.position.x < 0) {
-            Player.ship.position.x = 0;
-        }
-        if (Player.ship.position.y < 0) {
-            Player.ship.position.y = 0;
-        }
-        if (Player.ship.position.x > p5.width) {
-            Player.ship.position.x = p5.width;
-        }
-        if (Player.ship.position.y > p5.height) {
-            Player.ship.position.y = p5.height;
-        }
-
-        /**
-         * Obsolete comment: constrain all sprites with a 40px margin of the canvas
-         * TODO: Make this freaking work  properly
-         */
-        Enemy.ships.forEach(sprite => {
-            if (sprite.position.x <= 0 || sprite.position.x >= p5.width) sprite.velocity.x *= -1;
-            // if (sprite.position.x > width + Config.MARGIN) sprite.position.x = -Config.MARGIN;
-            if (sprite.position.y <= 0 || sprite.position.y >= p5.height) sprite.velocity.y *= -1;
-            // if (sprite.position.y > height + Config.MARGIN) sprite.position.y = height / (height - 100);
-            // if (sprite.position.y > height + Config.MARGIN) sprite.getDirection() = height / (height - 100);
-        });
-
-        /**
-         * Check collision between bullets and enemy ships
-         * Also check collision between player ship and enemy
-         */
-        Enemy.ships.collide(Player.bullets, CheckCollision);
-        Player.ship.collide(Enemy.ships, PlayerCollision);
-
-        /**
-         * Remove a bullet if it goes beyond the visible canvas
-         */
-        Player.bullets.forEach((bullet) => {
-            if (bullet.position.y < 1) {
-                bullet.remove();
+        // Run the game if it is initialised by the user
+        if (!Config.GAME_INIT) {
+            // Show player lives on the screen
+            for (let i = 0; i < Player.lives.sprite.length; i++) {
+                Player.lives.sprite[i].scale = 0.1;
+                Player.lives.sprite[i].position.x = (p5.width - 100) - (i * 50);
+                Player.lives.sprite[i].position.y = 20;
             }
-        });
+            /**
+             * Set player position and size
+             */
+            Player.ship.position.x = p5.mouseX;
+            Player.ship.position.y = p5.mouseY
+            Player.ship.scale = 0.3;
 
-        // HACK: fire the bullets if space key is pressed
-        // TODO: Use a mousePressed function instead to test if user is shooting
-        if (p5.keyWentDown('space')) {
-            let bullet = p5.createSprite(Player.ship.position.x, Player.ship.position.y);
-            bullet.addImage(p5.loadImage(Player.bulletImg));
-            bullet.setSpeed(10, 270);
-            bullet.life = 100;
-            Sound.playerShoot.play();
-            Player.bullets.add(bullet);
+            /**
+             * Constrain player to the configured scene size
+             */
+            if (Player.ship.position.x < 0) {
+                Player.ship.position.x = 0;
+            }
+            if (Player.ship.position.y < 0) {
+                Player.ship.position.y = 0;
+            }
+            if (Player.ship.position.x > p5.width) {
+                Player.ship.position.x = p5.width;
+            }
+            if (Player.ship.position.y > p5.height) {
+                Player.ship.position.y = p5.height;
+            }
+
+            /**
+             * Constrain all sprites to the available canvas area
+             */
+            Enemy.ships.forEach(sprite => {
+                if (sprite.position.x <= 0 || sprite.position.x >= p5.width) sprite.velocity.x *= -1;
+                if (sprite.position.y <= 0 || sprite.position.y >= p5.height) sprite.velocity.y *= -1;
+            });
+
+            /**
+             * Check collision between bullets and enemy ships
+             * Also check collision between player ship and enemy
+             */
+            Enemy.ships.collide(Player.bullets, CheckCollision);
+            Player.ship.collide(Enemy.ships, PlayerCollision);
+
+            /**
+             * Remove a bullet if it goes beyond the visible canvas
+             */
+            Player.bullets.forEach((bullet) => {
+                if (bullet.position.y < 1) {
+                    bullet.remove();
+                }
+            });
+
+            /**
+             * Fire a bullet when the user presses the SPACE key
+             */
+            if (p5.keyWentDown('space')) {
+                let bullet = p5.createSprite(Player.ship.position.x, Player.ship.position.y);
+                bullet.addImage(p5.loadImage(Player.bulletImg));
+                bullet.setSpeed(10, 270);
+                bullet.life = 100;
+                Player.bullets.add(bullet);
+            }
+
+            // Create Enemies on the screen
+            if (!Config.PAUSE && Enemy.ships.length <= Config.MAX_ENEMY) {
+                CreateEnemy(p5.random(p5.width / 2), p5.random(p5.width / 2), 2);
+            }
+
+            /**
+             * Pause Game when `P` key is pressed
+             */
+            if (p5.keyCode == 80 && Config.PAUSE == false) {
+                Config.PAUSE == true;
+            }
+            else if (p5.keyCode == 80 && Config.PAUSE == true) {
+                Config.PAUSE == false;
+            }
+
+            // Show user Score
+            p5.fill(255).textSize(22);
+            p5.textFont(FX.font);
+            p5.text(`Score: ${Player.score}`, p5.width - 200, 60);
+            p5.text(`Level: ${Config.CURRENT_LEVEL}`, p5.width - 200, 80);
+
+            // draw all sprites on the screen
+            p5.drawSprites();
         }
-
-        /**
-         * TODO: Make this work properly.
-         */
-        if (Player.score > 0 && Player.score % 100 === 0) {
-            console.log(`Level ${Config.CURRENT_LEVEL} completed`);
-            Config.ENEMY_COUNTDOWN -= Player.score;
-
-            // Config.CURRENT_LEVEL += 1;
-            // Config.MAX_ENEMY += 1;
+        else {
+            p5.textAlign(p5.CENTER);
+            p5.fill(255).textSize(33);
+            p5.textFont(FX.font);
+            p5.text('Click to Start', p5.width / 2, p5.height / 2);
+            p5.fill(255, 255, 0).textSize(20);
+            p5.text(`Press SPACE to shoot \n Press P to pause\n Press SHIFT to Pause music`);
         }
-
-
-        // Stop Creating Enemies if there are up to 50 on the screen
-        if (Enemy.ships.length >= 50) {
-            GenerateEnemy(false, Config.GENERATE_ENEMY_ID);
-        }
-
-        /**
-         * Pause Game when `P` key is pressed
-         */
-        if (p5.keyCode == 80 && Config.PAUSE == false) {
-            GenerateEnemy(false, Config.GENERATE_ENEMY_ID);
-            Config.PAUSE == true;
-            Config.GENERATE = false;
-        }
-        else if (p5.keyCode == 80 && Config.PAUSE == true) {
-            GenerateEnemy(Config.PAUSE, Config.GENERATE_ENEMY_ID);
-            Config.PAUSE == false;
-        }
-
-        // Show user Score
-        p5.fill(255).textSize(22);
-        p5.textFont(FX.font);
-        p5.text(`Score: ${Player.score}`, p5.width - 200, 60);
-
-        // show sound mute button
-        FX.soundOn.sprite = p5.createSprite(p5.width - 200, 80);
-        FX.soundOn.sprite.addImage(FX.soundOn.img);
-        FX.soundOn.sprite.scale = 2;
-        // FX.soundOn.sprite.position.x = p5.width / 2;
-        // FX.gameOver.sprite.position.y = p5.height / 2;
-
-        // draw all sprites on the screen
-        p5.drawSprites();
     }
 }
 

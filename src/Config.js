@@ -24,10 +24,10 @@ export const Config = {
     LEVELS: 10,
     PAUSE: false,
     CURRENT_LEVEL: 0,
-    GENERATE: true,
-    ENEMY_COUNTDOWN: 3000,
+    ENEMY_COUNTDOWN: 10000,
     BACK_GROUND: null,
-    GENERATE_ENEMY_ID: null,
+    GAME_INIT: true,
+    BACK_GROUND_SPEED: 3.5,
 };
 
 //The Player Object
@@ -53,13 +53,6 @@ export const Enemy = {
     bulletImg: '../assets/enemy_fire.png',
     explosion: '../assets/explosion.png',
     created: false
-};
-
-export const Sound = {
-    backgroundSound: null,
-    playerShoot: null,
-    playerDeath: null,
-    enemyDeath: null,
 };
 
 export const FX = {

@@ -18,7 +18,7 @@
  * 
  */
 import { CreateEnemy } from './CreateEnemy';
-import { Player, Sound, FX, Enemy } from './Config';
+import { Player, FX, Enemy, Config } from './Config';
 const Socket = io();
 
 /**
@@ -54,7 +54,6 @@ export function CheckCollision(other, bullet) {
         // }
     }
 
-    Sound.enemyDeath.play();
     bullet.remove();
     other.remove();
 }
@@ -95,11 +94,12 @@ export function PlayerCollision(player, enemy) {
      */
     if (Player.lives.value <= 0) {
         console.log(`Game Over`);
-        // play plater dead sound here
+        Config.GAME_OVER = true;
 
-        // Stop background song
-        Sound.backgroundSound.stop();
-
+        /**
+         * If the player dies, show the game over screen.
+         * Delay the game over screen for 0.2 seconds since every sprite is removed
+         */
         setTimeout(() => {
             p5.allSprites.forEach(sprite => {
                 sprite.remove();
