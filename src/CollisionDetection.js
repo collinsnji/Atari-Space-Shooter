@@ -16,7 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Atari Space Shooter.  If not, see <http://www.gnu.org/licenses/>.
  * 
+ * Filename: CollisionDetection.js
+ * Date: 06/14/2018
+ * Description: Handles collision detection for both player and enemy ships
  */
+
+ // Import configurations
 import { CreateEnemy } from './CreateEnemy';
 import { Player, FX, Enemy, Config } from './Config';
 const Socket = io();
@@ -30,6 +35,7 @@ const Socket = io();
 export function CheckCollision(other, bullet) {
     let scale = other.scaleFactor - 1;
 
+    // If the enemy ship is greater than 0, create new ship
     if (scale > 0) {
         CreateEnemy(other.position.x, other.position.y, scale);
         CreateEnemy(other.position.x, other.position.y, scale);
@@ -67,6 +73,8 @@ export function CheckCollision(other, bullet) {
 export function PlayerCollision(player, enemy) {
     let lives = Player.lives.value;
     let playerExplosion = p5.createSprite(player.position.x + 2, player.position.y + 2);
+
+    // Add explosion animation when the player is hit by an enemy
     for (let i = 0; i < 3; i++) {
         playerExplosion.addAnimation('small', Player.explosion[0]);
         playerExplosion.addAnimation('large', Player.explosion[1]);
@@ -118,4 +126,5 @@ export function PlayerCollision(player, enemy) {
     });
 
     Socket.emit('player hit', Player.lives.value);
+    Socket.on('score update', (data) => console.log(data));
 }

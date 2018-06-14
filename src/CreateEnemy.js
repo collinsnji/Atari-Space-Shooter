@@ -16,8 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Atari Space Shooter.  If not, see <http://www.gnu.org/licenses/>.
  * 
+ * Filename: CreateEnemy.js
+ * Date: 06/14/2018
+ * Description: Handles enemy creation and enemy state management
  */
 
+ // Import configurations
 import { Player, Enemy } from './Config';
 
 /**
@@ -35,7 +39,10 @@ export function CreateEnemy(x, y, scaleFactor = 2) {
 
     enemyShip.setSpeed(2.5 + p5.random(Player.ship.getSpeed()), p5.random(360));
     enemyShip.scaleFactor = scaleFactor;
-
+    
+    /**
+     * If the ship is hit and it was a big ship, split it into two
+     */
     if (scaleFactor == 2) {
         enemyShip.scale = 0.6;
     }
@@ -43,6 +50,8 @@ export function CreateEnemy(x, y, scaleFactor = 2) {
         enemyShip.scale = 0.3;
     }
 
+    // Make the ship move slower based on the mass.
+    // This adds more physics to the game by simulating momentum
     enemyShipImg.mass = 2 + enemyShip.scale;
     Enemy.ships.add(enemyShip);
     return enemyShip;

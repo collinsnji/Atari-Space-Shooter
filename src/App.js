@@ -16,7 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Atari Space Shooter.  If not, see <http://www.gnu.org/licenses/>.
  * 
+ * Filename: App.js
+ * Date: 06/14/2018
+ * Description: Main App runner. This is where the game is initialised
  */
+
+// Import libraries and configs
 
 import p5 from 'p5/lib/p5';
 import 'p5/lib/addons/p5.play';
@@ -25,7 +30,6 @@ import './scss/style.scss';
 import { Config, Player, Enemy, FX } from './Config';
 import { CheckCollision, PlayerCollision } from './CollisionDetection';
 import { CreateEnemy } from './CreateEnemy';
-
 
 /**
  * Atari Space Shooter is a 2D game made using the Processing library
@@ -45,7 +49,9 @@ const AtariSpaceShooter = (p5) => {
 
     const windowWidth = p5.windowWidth;
     const windowHeight = p5.windowHeight;
-
+    const socket = io();
+    let username = null;
+    socket.on('score update', (data) => { username = (data.username) });
     /**
      * Preload game assets. These include images and background assets
      */
@@ -59,7 +65,7 @@ const AtariSpaceShooter = (p5) => {
      * Begin game when mouse is clicked
      */
     p5.mousePressed = () => {
-        Config.GAME_INIT = false;
+        Config.GAME_INIT = true;
     }
 
     /**
@@ -136,7 +142,7 @@ const AtariSpaceShooter = (p5) => {
         });
 
         // Run the game if it is initialised by the user
-        if (!Config.GAME_INIT) {
+        if (Config.GAME_INIT) {
             // Show player lives on the screen
             for (let i = 0; i < Player.lives.sprite.length; i++) {
                 Player.lives.sprite[i].scale = 0.1;
