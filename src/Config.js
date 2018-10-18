@@ -24,7 +24,7 @@ export const Config = {
     LEVELS: 10,
     PAUSE: false,
     CURRENT_LEVEL: 0,
-    ENEMY_COUNTDOWN: 10000,
+    ENEMY_COUNTDOWN: 300,
     BACK_GROUND: null,
     GAME_INIT: false,
     BACK_GROUND_SPEED: 3.5,

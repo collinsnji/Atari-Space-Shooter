@@ -45,12 +45,12 @@ import { CreateEnemy } from './CreateEnemy';
  */
 const AtariSpaceShooter = (p5) => {
     window.p5 = p5;
-    console.log(p5);
 
     const windowWidth = p5.windowWidth;
     const windowHeight = p5.windowHeight;
     const socket = io();
     let username = null;
+    let enemyTimer = 0;
     socket.on('score update', (data) => { username = (data.username) });
     /**
      * Preload game assets. These include images and background assets
@@ -76,6 +76,8 @@ const AtariSpaceShooter = (p5) => {
 
         let canvas = p5.createCanvas(windowWidth / 2, windowHeight);
         canvas.parent('gameCanvas');
+
+        p5.setFrameRate(30);
 
         // Create groups to hold various elements
         Player.bullets = new p5.Group();
@@ -104,21 +106,6 @@ const AtariSpaceShooter = (p5) => {
             Config.BACK_GROUND.add(planets);
             Config.BACK_GROUND.add(stars);
         }
-
-        /**
-         * Progressively inclrease the number of enemies in the game by setting a timer
-         * that increases the max enemies every 10 seconds
-         */
-        setInterval(() => {
-            if (Config.MAX_ENEMY <= Config.LEVELS) {
-                Config.CURRENT_LEVEL += 1;
-                Config.BACK_GROUND_SPEED += 0.5;
-                return Config.MAX_ENEMY += 1;
-            }
-            else {
-                return false;
-            }
-        }, Config.ENEMY_COUNTDOWN);
     }
 
     /**
@@ -126,19 +113,22 @@ const AtariSpaceShooter = (p5) => {
      */
 
     p5.draw = () => {
-
         p5.background(10);
         /**
          * Scroll background infinitely
          * If the stars or planet's position is greater than the canvas size reset its position
          */
         Config.BACK_GROUND.forEach(backgroundItem => {
-            backgroundItem.setSpeed(Config.BACK_GROUND_SPEED, 90);
-            backgroundItem.position.y += backgroundItem.width * 0.01;
-            if (backgroundItem.position.y > p5.height) {
-                backgroundItem.position.y = 0;
+            if (Config.PAUSE) {
+                backgroundItem.setSpeed(0, 90);
+                backgroundItem.position.y += backgroundItem.width * 0.01;
+            } else {
+                backgroundItem.setSpeed(Config.BACK_GROUND_SPEED, 90);
+                backgroundItem.position.y += backgroundItem.width * 0.01;
+                if (backgroundItem.position.y > p5.height) {
+                    backgroundItem.position.y = 0;
+                }
             }
-
         });
 
         // Run the game if it is initialised by the user
@@ -152,9 +142,11 @@ const AtariSpaceShooter = (p5) => {
             /**
              * Set player position and size
              */
-            Player.ship.position.x = p5.mouseX;
-            Player.ship.position.y = p5.mouseY
-            Player.ship.scale = 0.3;
+            if (!Config.PAUSE) {
+                Player.ship.position.x = p5.mouseX;
+                Player.ship.position.y = p5.mouseY
+                Player.ship.scale = 0.3;
+            }
 
             /**
              * Constrain player to the configured scene size
@@ -173,24 +165,52 @@ const AtariSpaceShooter = (p5) => {
             }
 
             /**
-             * Constrain all sprites to the available canvas area
+             * Constrain all sprites to the available canvas area & generate new enemies
              */
-            Enemy.ships.forEach(sprite => {
-                if (sprite.position.x <= 0 || sprite.position.x >= p5.width) sprite.velocity.x *= -1;
-                if (sprite.position.y <= 0 || sprite.position.y >= p5.height) sprite.velocity.y *= -1;
-            });
+            if (!Config.PAUSE) {
+                if (enemyTimer >= Config.ENEMY_COUNTDOWN && Config.MAX_ENEMY <= Config.LEVELS) {
+                    enemyTimer = 0;
+                    Config.CURRENT_LEVEL += 1;
+                    Config.BACK_GROUND_SPEED += 0.5;
+                    Config.MAX_ENEMY += 1;
+                }
+
+                Enemy.ships.forEach(sprite => {
+                    if (sprite.getSpeed() === 0) {
+                        sprite.setSpeed(2.5, sprite._angle);
+                    }
+                    if (sprite.position.x <= 0 || sprite.position.x >= p5.width) sprite.velocity.x *= -1;
+                    if (sprite.position.y <= 0 || sprite.position.y >= p5.height) sprite.velocity.y *= -1;
+                });
+                enemyTimer++;
+            } else {
+                Enemy.ships.forEach(sprite => {
+                    if (sprite.getSpeed() !== 0) {
+                        sprite._angle = sprite.getDirection();
+                        sprite.setSpeed(0);
+                    }
+                });
+            }
 
             /**
              * Check collision between bullets and enemy ships
              * Also check collision between player ship and enemy
              */
-            Enemy.ships.collide(Player.bullets, CheckCollision);
-            Player.ship.collide(Enemy.ships, PlayerCollision);
+            if (!Config.PAUSE) {
+                Enemy.ships.collide(Player.bullets, CheckCollision);
+                Player.ship.collide(Enemy.ships, PlayerCollision);
+            }
 
             /**
              * Remove a bullet if it goes beyond the visible canvas
              */
             Player.bullets.forEach((bullet) => {
+                if (Config.PAUSE) {
+                    if (bullet.getSpeed() !== 0) bullet.setSpeed(0, 270);
+                } else {
+                    if (bullet.getSpeed() === 0) bullet.setSpeed(10, 270);
+                }
+
                 if (bullet.position.y < 1) {
                     bullet.remove();
                 }
@@ -199,7 +219,7 @@ const AtariSpaceShooter = (p5) => {
             /**
              * Fire a bullet when the user presses the SPACE key
              */
-            if (p5.keyWentDown('space')) {
+            if (!Config.PAUSE && p5.keyWentDown('space')) {
                 let bullet = p5.createSprite(Player.ship.position.x, Player.ship.position.y);
                 bullet.addImage(p5.loadImage(Player.bulletImg));
                 bullet.setSpeed(10, 270);
@@ -212,16 +232,6 @@ const AtariSpaceShooter = (p5) => {
                 CreateEnemy(p5.random(p5.width / 2), p5.random(p5.width / 2), 2);
             }
 
-            /**
-             * Pause Game when `P` key is pressed
-             */
-            if (p5.keyCode == 80 && Config.PAUSE == false) {
-                Config.PAUSE == true;
-            }
-            else if (p5.keyCode == 80 && Config.PAUSE == true) {
-                Config.PAUSE == false;
-            }
-
             // Show user Score
             p5.fill(255).textSize(22);
             p5.textFont(FX.font);
@@ -229,7 +239,15 @@ const AtariSpaceShooter = (p5) => {
             p5.text(`Level: ${Config.CURRENT_LEVEL}`, p5.width - 200, 80);
 
             // draw all sprites on the screen
+            
             p5.drawSprites();
+
+            if (Config.PAUSE) {
+                p5.textAlign(p5.CENTER);
+                p5.fill(255).textSize(33);
+                p5.textFont(FX.font);
+                p5.text('Press P to Play', p5.width / 2, p5.height / 2);
+            }
         }
         else {
             p5.textAlign(p5.CENTER);
@@ -238,6 +256,18 @@ const AtariSpaceShooter = (p5) => {
             p5.text('Click to Start', p5.width / 2, p5.height / 2);
             p5.fill(255, 255, 0).textSize(20);
             p5.text(`Press SPACE to shoot \n Press P to pause\n Press SHIFT to Pause music`);
+        }
+    }
+
+    /**
+     * Processing `keyPressed()` function
+     */
+    p5.keyPressed = () => {
+        if (p5.keyCode == 80 && Config.GAME_INIT && Config.PAUSE == false) {
+            Config.PAUSE = true;
+        }
+        else if (p5.keyCode == 80 && Config.GAME_INIT && Config.PAUSE == true) {
+            Config.PAUSE = false;
         }
     }
 }
